@@ -5,7 +5,7 @@ import logging
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Response, Body
+from fastapi import FastAPI, APIRouter, UploadFile, File, Form, HTTPException, Response, Body
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,9 +42,9 @@ def clean_json_data(obj: Any) -> Any:
         return [clean_json_data(v) for v in obj]
     return obj
 
-# Estado de sesión local en memoria (fallback para uso monousuario)
+# Estado de sesión local en memoria (fallback)
 CURRENT_SESSION: Dict[str, Any] = {
-    "raw_files": {}, # 0, 1, 2 -> {"filename": str, "records": list, "columns": list, "warnings": list}
+    "raw_files": {},
     "mappings": {},
     "configs": [
         {"nombre": "Proveedor 1", "iva_incluido": True, "iva_percent": 21.0, "descuento_percent": 0.0, "recargo_percent": 0.0, "bonificacion_percent": 0.0, "modo_precio": "unitario", "unidades_por_bulto": 1.0},
@@ -64,19 +64,22 @@ class ProcessRequest(BaseModel):
 
 class OverrideMatchRequest(BaseModel):
     group_id: str
-    action: str # "confirm", "unlink", "confirm_all", "unlink_all"
+    action: str
     matched_groups: Optional[List[Dict[str, Any]]] = None
     configs: Optional[List[Dict[str, Any]]] = None
 
-@app.get("/api/health")
-@app.post("/api/health")
-@app.get("/api/heartbeat")
-@app.post("/api/heartbeat")
+# Creamos el Router de la API
+router = APIRouter()
+
+@router.get("/health")
+@router.post("/health")
+@router.get("/heartbeat")
+@router.post("/heartbeat")
 async def health_check():
     """Endpoint de estado para verificar que el servidor está 100% activo."""
     return {"status": "ok"}
 
-@app.post("/api/upload/{list_idx}")
+@router.post("/upload/{list_idx}")
 async def upload_file(list_idx: int, file: UploadFile = File(...)):
     """Carga un archivo (.xlsx, .xls, .csv, .pdf), detecta columnas y retorna registros serializados."""
     if list_idx not in (0, 1, 2):
@@ -93,7 +96,6 @@ async def upload_file(list_idx: int, file: UploadFile = File(...)):
             
         detected_map = detect_column_mapping(columns)
         
-        # Limpiar registros para compatibilidad JSON pura
         df_clean = df.fillna("")
         records = df_clean.to_dict(orient="records")
         preview_rows = df_clean.head(10).to_dict(orient="records")
@@ -122,7 +124,7 @@ async def upload_file(list_idx: int, file: UploadFile = File(...)):
         logger.exception("Error al subir archivo")
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.delete("/api/upload/{list_idx}")
+@router.delete("/upload/{list_idx}")
 async def remove_file(list_idx: int):
     """Elimina una lista cargada de la sesión."""
     if list_idx in CURRENT_SESSION["raw_files"]:
@@ -247,7 +249,7 @@ def generate_in_memory_demo_datasets() -> List[Dict[str, Any]]:
         })
     return results
 
-@app.post("/api/load_demo")
+@router.post("/load_demo")
 async def load_demo():
     """Carga automáticamente las 3 listas de demostración instantáneamente en memoria."""
     try:
@@ -257,12 +259,11 @@ async def load_demo():
         logger.exception("Error al generar datos de prueba")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/process")
+@router.post("/process")
 async def process_all_lists(req: ProcessRequest):
     """Procesa el 100% de las filas de todas las listas, normaliza, empareja y calcula totales."""
     files_data = req.files_data or {}
     
-    # Si no se enviaron en el body, usar CURRENT_SESSION
     if not files_data:
         for idx, f_info in CURRENT_SESSION.get("raw_files", {}).items():
             files_data[str(idx)] = f_info.get("records", [])
@@ -315,7 +316,7 @@ async def process_all_lists(req: ProcessRequest):
         "total_items": len(comparison_data["rows"])
     })
 
-@app.post("/api/match/override")
+@router.post("/match/override")
 async def override_match(req: OverrideMatchRequest):
     """Permite al usuario confirmar o desvincular un emparejamiento dudoso."""
     groups = req.matched_groups or CURRENT_SESSION.get("matched_groups", [])
@@ -382,8 +383,8 @@ async def override_match(req: OverrideMatchRequest):
 # ========================================================
 # EXPORTACIONES
 # ========================================================
-@app.post("/api/export/excel")
-@app.get("/api/export/excel")
+@router.post("/export/excel")
+@router.get("/export/excel")
 async def export_excel(payload: Optional[Dict[str, Any]] = None):
     comp_data = payload.get("comparison_results") if payload else CURRENT_SESSION.get("comparison_results")
     configs = payload.get("configs") if payload else CURRENT_SESSION.get("configs", [])
@@ -396,8 +397,8 @@ async def export_excel(payload: Optional[Dict[str, Any]] = None):
         headers={"Content-Disposition": "attachment; filename=Comparacion_Precios_Proveedores.xlsx"}
     )
 
-@app.post("/api/export/csv")
-@app.get("/api/export/csv")
+@router.post("/export/csv")
+@router.get("/export/csv")
 async def export_csv(payload: Optional[Dict[str, Any]] = None):
     comp_data = payload.get("comparison_results") if payload else CURRENT_SESSION.get("comparison_results")
     configs = payload.get("configs") if payload else CURRENT_SESSION.get("configs", [])
@@ -410,8 +411,8 @@ async def export_csv(payload: Optional[Dict[str, Any]] = None):
         headers={"Content-Disposition": "attachment; filename=Comparacion_Listas_Precios.csv"}
     )
 
-@app.post("/api/export/pdf")
-@app.get("/api/export/pdf")
+@router.post("/export/pdf")
+@router.get("/export/pdf")
 async def export_pdf(payload: Optional[Dict[str, Any]] = None):
     comp_data = payload.get("comparison_results") if payload else CURRENT_SESSION.get("comparison_results")
     configs = payload.get("configs") if payload else CURRENT_SESSION.get("configs", [])
@@ -424,8 +425,8 @@ async def export_pdf(payload: Optional[Dict[str, Any]] = None):
         headers={"Content-Disposition": "attachment; filename=Informe_Comparativo_Precios.pdf"}
     )
 
-@app.post("/api/export/order/{list_idx}")
-@app.get("/api/export/order/{list_idx}")
+@router.post("/export/order/{list_idx}")
+@router.get("/export/order/{list_idx}")
 async def export_order(list_idx: int, payload: Optional[Dict[str, Any]] = None):
     comp_data = payload.get("comparison_results") if payload else CURRENT_SESSION.get("comparison_results")
     configs = payload.get("configs") if payload else CURRENT_SESSION.get("configs", [])
@@ -439,7 +440,7 @@ async def export_order(list_idx: int, payload: Optional[Dict[str, Any]] = None):
         headers={"Content-Disposition": f"attachment; filename=Pedido_{prov_name}.xlsx"}
     )
 
-@app.get("/api/session/save")
+@router.get("/session/save")
 async def save_session():
     comp_data = CURRENT_SESSION.get("comparison_results")
     session_dict = {
@@ -454,7 +455,7 @@ async def save_session():
         headers={"Content-Disposition": "attachment; filename=Sesion_Comparacion.json"}
     )
 
-@app.post("/api/session/load")
+@router.post("/session/load")
 async def load_session(file: UploadFile = File(...)):
     try:
         content = await file.read()
@@ -471,6 +472,10 @@ async def load_session(file: UploadFile = File(...)):
         })
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al cargar sesión: {str(e)}")
+
+# Montar el Router bajo /api Y bajo raíz (para que nunca falle sin importar cómo Vercel rutee la URL)
+app.include_router(router, prefix="/api")
+app.include_router(router, prefix="")
 
 # Montar archivos estáticos para la interfaz de usuario
 static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")

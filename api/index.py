@@ -7,3 +7,6 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 from app.server import app
+
+# Exportar como app y handler para máxima compatibilidad con Vercel
+handler = app
