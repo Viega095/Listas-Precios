@@ -4,9 +4,8 @@ title Comparador de Listas de Precios
 
 :: ======================================================================
 :: CONFIGURACION DE GITHUB RELEASES
-:: Podes cambiar esta URL por el enlace de release de tu repositorio
 :: ======================================================================
-set "GITHUB_EXE_URL=https://github.com/TU_USUARIO/TU_REPOSITORIO/releases/latest/download/ComparadorPrecios.exe"
+set "GITHUB_EXE_URL=https://github.com/Viega095/Listas-Precios/releases/latest/download/ComparadorPrecios.exe"
 set "APP_DIR=%LOCALAPPDATA%\ComparadorPrecios"
 set "EXE_PATH=%APP_DIR%\ComparadorPrecios.exe"
 
