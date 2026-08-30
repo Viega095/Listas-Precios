@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import logging
 from typing import List, Dict, Any, Optional
@@ -222,13 +223,20 @@ async def override_match(req: OverrideMatchRequest):
         "rows": comparison_data["rows"]
     }
 
+def get_base_dir() -> str:
+    """Retorna el directorio base correcto ya sea en Python puro o dentro del .exe compilado por PyInstaller."""
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        return sys._MEIPASS
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 @app.post("/api/load_demo")
 async def load_demo():
     """Carga automáticamente las 3 listas de prueba de la carpeta datos_prueba/."""
+    base_dir = get_base_dir()
     demo_files = [
-        (0, "datos_prueba/Proveedor_1_Distribuidora_Norte.xlsx", "Proveedor 1 (Norte)"),
-        (1, "datos_prueba/Proveedor_2_Mayorista_Central.csv", "Proveedor 2 (Central)"),
-        (2, "datos_prueba/Proveedor_3_Supercenter_Nacional.xlsx", "Proveedor 3 (Supercenter)")
+        (0, os.path.join(base_dir, "datos_prueba", "Proveedor_1_Distribuidora_Norte.xlsx"), "Proveedor 1 (Norte)"),
+        (1, os.path.join(base_dir, "datos_prueba", "Proveedor_2_Mayorista_Central.csv"), "Proveedor 2 (Central)"),
+        (2, os.path.join(base_dir, "datos_prueba", "Proveedor_3_Supercenter_Nacional.xlsx"), "Proveedor 3 (Supercenter)")
     ]
     results = []
     for idx, path, default_name in demo_files:
@@ -356,7 +364,7 @@ async def load_session(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Error al cargar sesión: {str(e)}")
 
 # Montar archivos estáticos para la interfaz de usuario
-static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+static_dir = os.path.join(get_base_dir(), "static")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
