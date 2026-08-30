@@ -15,8 +15,29 @@ from app.matcher import ProductMatcher
 from app.calculator import PriceCalculator
 from app.exporter import ResultExporter
 
+import time
+import threading
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("PriceComparator")
+
+LAST_HEARTBEAT = time.time()
+HEARTBEAT_TIMEOUT = 10.0 # Segundos de gracia sin latidos antes de auto-cerrar
+AUTO_SHUTDOWN_ENABLED = True
+
+def watchdog_loop():
+    """Monitorea que la pestaña del navegador siga abierta. Si se cierra, termina el proceso de fondo."""
+    global LAST_HEARTBEAT
+    time.sleep(6) # Esperar a que el navegador se abra
+    while AUTO_SHUTDOWN_ENABLED:
+        time.sleep(2)
+        if time.time() - LAST_HEARTBEAT > HEARTBEAT_TIMEOUT:
+            logger.info("Pestaña del navegador cerrada. Finalizando proceso de la aplicación...")
+            time.sleep(0.5)
+            os._exit(0)
+
+# Iniciar hilo de vigilancia
+threading.Thread(target=watchdog_loop, daemon=True).start()
 
 app = FastAPI(title="Comparador de Precios de Proveedores", version="1.0.0")
 
@@ -27,6 +48,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.post("/api/heartbeat")
+async def heartbeat():
+    """Endpoint de latido periódico enviado por el frontend mientras la pestaña esté abierta."""
+    global LAST_HEARTBEAT
+    LAST_HEARTBEAT = time.time()
+    return {"status": "alive"}
+
+@app.post("/api/shutdown")
+async def shutdown():
+    """Cierra el proceso inmediatamente cuando el navegador envía sendBeacon en beforeunload."""
+    def delayed_exit():
+        time.sleep(0.3)
+        os._exit(0)
+    threading.Thread(target=delayed_exit, daemon=True).start()
+    return {"status": "shutting_down"}
 
 # Estado de la sesión actual en memoria (para uso local monousuario)
 CURRENT_SESSION: Dict[str, Any] = {

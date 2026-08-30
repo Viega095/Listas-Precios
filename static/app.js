@@ -23,7 +23,27 @@ class PriceComparatorApp {
   init() {
     this.bindEvents();
     this.renderConfigCards();
+    this.startHeartbeat();
     lucide.createIcons();
+  }
+
+  startHeartbeat() {
+    // Enviar latido cada 3 segundos mientras la pestaña esté abierta
+    setInterval(() => {
+      fetch('/api/heartbeat', { method: 'POST', keepalive: true }).catch(() => {});
+    }, 3000);
+
+    // Enviar señal de apagado al cerrar la pestaña o el navegador
+    window.addEventListener('beforeunload', () => {
+      try {
+        navigator.sendBeacon('/api/shutdown');
+      } catch (e) {}
+    });
+    window.addEventListener('pagehide', () => {
+      try {
+        navigator.sendBeacon('/api/shutdown');
+      } catch (e) {}
+    });
   }
 
   bindEvents() {
