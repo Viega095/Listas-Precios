@@ -29,7 +29,7 @@ FIRST_HEARTBEAT_RECEIVED = False
 STARTUP_TIME = time.time()
 
 def watchdog_loop():
-    """Monitorea que la pestaña del navegador siga abierta. Si se cierra, termina el proceso de fondo."""
+    """Monitorea que la pestaña del navegador siga abierta. Si se cierra tras haber conectado, termina el proceso."""
     global LAST_HEARTBEAT, FIRST_HEARTBEAT_RECEIVED
     while AUTO_SHUTDOWN_ENABLED:
         time.sleep(3)
@@ -37,10 +37,6 @@ def watchdog_loop():
             if time.time() - LAST_HEARTBEAT > HEARTBEAT_TIMEOUT:
                 logger.info("Pestaña del navegador cerrada. Finalizando proceso de la aplicación...")
                 time.sleep(0.5)
-                os._exit(0)
-        else:
-            # Si pasaron más de 180s sin que el navegador se haya conectado, auto-cerrar
-            if time.time() - STARTUP_TIME > 180.0:
                 os._exit(0)
 
 # Iniciar hilo de vigilancia

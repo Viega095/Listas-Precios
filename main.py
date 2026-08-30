@@ -2,6 +2,7 @@ import os
 import sys
 import io
 import time
+import socket
 import threading
 import webbrowser
 import urllib.request
@@ -12,17 +13,19 @@ if sys.stdout is None:
 if sys.stderr is None:
     sys.stderr = io.StringIO()
 
-# Prevención de múltiples instancias en Windows (Single Instance Mutex)
-if sys.platform == "win32":
+def is_port_in_use(port: int) -> bool:
+    """Verifica si el puerto ya está en uso por una instancia previa."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('127.0.0.1', port)) == 0
+
+# Si ya hay una instancia corriendo en el puerto 8000, solo abrir navegador y salir
+if is_port_in_use(8000):
     try:
-        import ctypes
-        ERROR_ALREADY_EXISTS = 183
-        kernel32 = ctypes.windll.kernel32
-        mutex = kernel32.CreateMutexW(None, False, "ComparadorPreciosSingleInstanceMutex")
-        last_error = kernel32.GetLastError()
-        if last_error == ERROR_ALREADY_EXISTS:
-            webbrowser.open("http://127.0.0.1:8000")
-            sys.exit(0)
+        req = urllib.request.Request("http://127.0.0.1:8000/api/heartbeat", data=b"{}", headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=1) as resp:
+            if resp.status == 200:
+                webbrowser.open("http://127.0.0.1:8000")
+                sys.exit(0)
     except Exception:
         pass
 
@@ -52,10 +55,9 @@ def show_splash():
         y = (splash_root.winfo_screenheight() // 2) - (h // 2)
         splash_root.geometry(f"{w}x{h}+{x}+{y}")
         
-        # Sin bordes de ventana para aspecto de Splash Screen
+        # Aspecto de Splash Screen sin bordes
         splash_root.overrideredirect(True)
         
-        # Marco decorativo con borde azul
         frame = tk.Frame(splash_root, bg="#0f172a", bd=1, relief="solid", highlightbackground="#0284c7", highlightthickness=1)
         frame.pack(fill="both", expand=True)
         
@@ -106,7 +108,7 @@ def wait_and_open_browser():
             req = urllib.request.Request(heartbeat_url, data=b"{}", headers={"Content-Type": "application/json"})
             with urllib.request.urlopen(req, timeout=1) as resp:
                 if resp.status == 200:
-                    time.sleep(0.3)
+                    time.sleep(0.4)
                     webbrowser.open(app_url)
                     close_splash()
                     return
