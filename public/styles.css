@@ -1,0 +1,103 @@
+/* Estilos personalizados para el Comparador de Listas de Precios */
+
+.step-btn.active {
+  background-color: #f0f9ff;
+  color: #0369a1;
+  font-weight: 600;
+  border: 1px solid #bae6fd;
+}
+
+.step-btn.active span {
+  background-color: #0284c7;
+  color: #ffffff;
+}
+
+.file-card.has-file {
+  border-color: #0284c7;
+  background-color: #f8fafc;
+}
+
+/* ========================================================= */
+/* MEJORA VISUAL DE FILAS (CONTRASTE Y SEGUIMIENTO DEL OJO)   */
+/* ========================================================= */
+
+.row-comparison {
+  border-bottom: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.12s ease-in-out;
+}
+
+/* Fila Par: Blanco puro */
+.row-even {
+  background-color: #ffffff;
+}
+
+/* Fila Impar: Gris suave con contraste nítido */
+.row-odd {
+  background-color: #f3f6f9;
+}
+
+/* Al pasar el mouse: Resaltado azul cielo vibrante y borde lateral */
+.row-comparison:hover {
+  background-color: #e0f2fe !important;
+  box-shadow: inset 4px 0 0 0 #0284c7;
+}
+
+.row-comparison:hover td {
+  background-color: #e0f2fe !important;
+}
+
+/* Columnas fijas a la izquierda durante el scroll horizontal */
+.sticky-col-1 {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background-color: inherit;
+}
+
+.sticky-col-2 {
+  position: sticky;
+  left: 40px;
+  z-index: 10;
+  background-color: inherit;
+}
+
+thead th.sticky-col-1, thead th.sticky-col-2 {
+  z-index: 35 !important;
+  background-color: #0f172a !important;
+}
+
+/* Estilos de impresión profesionales */
+@media print {
+  header, nav, #kpi-cards-container, .drop-zone, button, select, input, #select-page-size, #btn-prev-page, #btn-next-page, #txt-pagination-info, #product-detail-modal {
+    display: none !important;
+  }
+  
+  body {
+    background-color: #ffffff !important;
+    font-size: 9pt !important;
+  }
+  
+  .step-section {
+    display: block !important;
+  }
+  
+  #section-step-5 {
+    display: block !important;
+  }
+  
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  
+  th, td {
+    padding: 4px 6px !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+  
+  .max-h-\[700px\] {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
