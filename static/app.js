@@ -464,10 +464,16 @@ class PriceComparatorApp {
     this.showLoading("Procesando 100% de productos...", "Normalizando descripciones, emparejando catálogos y calculando ahorros óptimos");
     
     try {
+      const filesData = {};
+      Object.keys(this.uploadedFiles).forEach(k => {
+        filesData[k] = this.uploadedFiles[k].raw_records || [];
+      });
+
       const res = await fetch('/api/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          files_data: filesData,
           mappings: this.mappings,
           configs: this.configs,
           similarity_threshold: 85.0
@@ -527,7 +533,7 @@ class PriceComparatorApp {
         <div class="space-y-1 text-xs">
           <div class="flex items-center gap-2">
             <span class="font-bold text-slate-800 text-sm">${r.producto}</span>
-            <span class="bg-amber-100 text-amber-800 border border-amber-300/60 px-2 py-0.5 rounded text-[10px] font-semibold">Similitud: ${r.confidence}%</span>
+            <span class="bg-amber-100 text-amber-800 border border-amber-300/60 px-2 py-0.5 rounded text-[10px] font-semibold">Similitud: ${r.similitud}%</span>
           </div>
           <div class="text-slate-600 grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
             <div><b>${this.configs[0].nombre}:</b> ${r.desc_l1 || '<i>No presente</i>'} (${r.precio_l1 ? '$' + r.precio_l1 : '-'})</div>
@@ -939,20 +945,69 @@ class PriceComparatorApp {
   // ========================================================
   // EXPORTACIONES Y SESIÓN
   // ========================================================
-  exportFile(format) {
+  async exportFile(format) {
     if (!this.comparisonResult) {
       this.showAlert('error', 'No hay resultados para exportar.');
       return;
     }
-    window.location.href = `/api/export/${format}`;
+    this.showLoading("Generando archivo...", `Exportando resultados a ${format.toUpperCase()}`);
+    try {
+      const res = await fetch(`/api/export/${format}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          comparison_results: this.comparisonResult,
+          configs: this.configs
+        })
+      });
+      if (!res.ok) throw new Error('Error al generar exportación');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Comparacion_Precios.${format === 'excel' ? 'xlsx' : (format === 'csv' ? 'csv' : 'pdf')}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      this.showAlert('error', e.message);
+    } finally {
+      this.hideLoading();
+    }
   }
 
-  exportOrder(listIdx) {
+  async exportOrder(listIdx) {
     if (!this.comparisonResult) {
       this.showAlert('error', 'No hay resultados para exportar.');
       return;
     }
-    window.location.href = `/api/export/order/${listIdx}`;
+    const provName = this.configs[listIdx].nombre.replace(/\s+/g, '_');
+    this.showLoading("Generando Pedido...", `Generando Excel para ${this.configs[listIdx].nombre}`);
+    try {
+      const res = await fetch(`/api/export/order/${listIdx}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          comparison_results: this.comparisonResult,
+          configs: this.configs
+        })
+      });
+      if (!res.ok) throw new Error('Error al generar pedido de compra');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Pedido_${provName}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      this.showAlert('error', e.message);
+    } finally {
+      this.hideLoading();
+    }
   }
 
   async loadSessionFile(file) {
