@@ -22,8 +22,8 @@ python -m PyInstaller --noconfirm --onefile --windowed ^
 echo.
 if %errorlevel% equ 0 (
     echo [EXITO] Compilacion completada con exito.
-    echo El archivo ejecutable final unico esta en: dist\ComparadorPrecios.exe
-    echo Podes subir "dist\ComparadorPrecios.exe" a la pestana Releases de GitHub.
+    echo El archivo ejecutable final esta en: dist\ComparadorPrecios.exe
+    echo Ya podes subir "dist\ComparadorPrecios.exe" a los Releases de GitHub.
 ) else (
     echo [ERROR] Ocurrio un problema durante la compilacion.
 )
