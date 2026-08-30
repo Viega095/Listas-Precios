@@ -28,7 +28,9 @@ if (-not $createdNew) {
 
 $appDir = "$env:LOCALAPPDATA\ComparadorPrecios"
 $exePath = "$appDir\ComparadorPrecios.exe"
+$versionFile = "$appDir\installed_version.txt"
 $githubUrl = "https://github.com/Viega095/Listas-Precios/releases/latest/download/ComparadorPrecios.exe"
+$apiUrl = "https://api.github.com/repos/Viega095/Listas-Precios/releases/latest"
 
 if (-not (Test-Path $appDir)) {
     New-Item -ItemType Directory -Path $appDir -Force | Out-Null
@@ -53,7 +55,7 @@ $lblTitle.Size = New-Object System.Drawing.Size(400, 26)
 $form.Controls.Add($lblTitle)
 
 $lblStatus = New-Object System.Windows.Forms.Label
-$lblStatus.Text = "Verificando instalación y componentes..."
+$lblStatus.Text = "Verificando actualizaciones..."
 $lblStatus.Font = New-Object System.Drawing.Font("Segoe UI", 9)
 $lblStatus.ForeColor = [System.Drawing.Color]::FromArgb(71, 85, 105)
 $lblStatus.Location = New-Object System.Drawing.Point(24, 50)
@@ -69,7 +71,7 @@ $pb.Value = 15
 $form.Controls.Add($pb)
 
 $lblDetail = New-Object System.Windows.Forms.Label
-$lblDetail.Text = "Por favor espere un momento..."
+$lblDetail.Text = "Conectando con GitHub..."
 $lblDetail.Font = New-Object System.Drawing.Font("Segoe UI", 8)
 $lblDetail.ForeColor = [System.Drawing.Color]::FromArgb(148, 163, 184)
 $lblDetail.Location = New-Object System.Drawing.Point(24, 108)
@@ -82,10 +84,27 @@ $timer.Interval = 100
 $timer.Add_Tick({
     $timer.Stop()
     
-    # Comprobar si existe el ejecutable
-    if (-not (Test-Path $exePath)) {
-        $lblStatus.Text = "Descargando la aplicación desde GitHub..."
-        $lblDetail.Text = "Descargando ComparadorPrecios.exe (Releases)..."
+    $installedTag = if (Test-Path $versionFile) { (Get-Content $versionFile -Raw).Trim() } else { "" }
+    $latestTag = ""
+    
+    # Consultar última versión en GitHub
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $req = [System.Net.WebRequest]::Create($apiUrl)
+        $req.UserAgent = "ComparadorPreciosLauncher"
+        $req.Timeout = 3000
+        $resp = $req.GetResponse()
+        $reader = New-Object System.IO.StreamReader($resp.GetResponseStream())
+        $json = $reader.ReadToEnd() | ConvertFrom-Json
+        $latestTag = $json.tag_name
+    } catch {}
+
+    $needsDownload = (-not (Test-Path $exePath)) -or ($latestTag -ne "" -and $latestTag -ne $installedTag)
+    
+    if ($needsDownload) {
+        $isUpdate = (Test-Path $exePath)
+        $lblStatus.Text = if ($isUpdate) { "Actualizando a la versión más reciente..." } else { "Descargando la aplicación desde GitHub..." }
+        $lblDetail.Text = "Descargando ComparadorPrecios.exe ($latestTag)..."
         $pb.Style = "Marquee"
         $pb.MarqueeAnimationSpeed = 30
         $form.Refresh()
@@ -94,6 +113,9 @@ $timer.Add_Tick({
             [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
             $client = New-Object Net.WebClient
             $client.DownloadFile($githubUrl, $exePath)
+            if ($latestTag -ne "") {
+                $latestTag | Out-File $versionFile -Encoding utf8 -Force
+            }
             $pb.Style = "Blocks"
             $pb.Value = 85
             $lblStatus.Text = "Descarga completada con éxito."
@@ -106,7 +128,7 @@ $timer.Add_Tick({
                 Copy-Item $localExe $exePath -Force
             } elseif (Test-Path $localExe2) {
                 Copy-Item $localExe2 $exePath -Force
-            } else {
+            } elseif (-not (Test-Path $exePath)) {
                 [System.Windows.Forms.MessageBox]::Show("No se pudo descargar la aplicación desde GitHub.`nVerifique su conexión a internet.", "Error de Descarga", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
                 $form.Close()
                 return
