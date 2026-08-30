@@ -15,6 +15,7 @@ from app.matcher import ProductMatcher
 from app.calculator import PriceCalculator
 from app.exporter import ResultExporter
 
+import asyncio
 import time
 import threading
 
@@ -22,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("PriceComparator")
 
 LAST_HEARTBEAT = time.time()
-HEARTBEAT_TIMEOUT = 10.0 # Segundos de gracia sin latidos tras haber conectado
+HEARTBEAT_TIMEOUT = 60.0 # Segundos de gracia sin latidos tras haber conectado (1 minuto)
 AUTO_SHUTDOWN_ENABLED = True
 FIRST_HEARTBEAT_RECEIVED = False
 STARTUP_TIME = time.time()
@@ -31,15 +32,15 @@ def watchdog_loop():
     """Monitorea que la pestaña del navegador siga abierta. Si se cierra, termina el proceso de fondo."""
     global LAST_HEARTBEAT, FIRST_HEARTBEAT_RECEIVED
     while AUTO_SHUTDOWN_ENABLED:
-        time.sleep(2)
+        time.sleep(3)
         if FIRST_HEARTBEAT_RECEIVED:
             if time.time() - LAST_HEARTBEAT > HEARTBEAT_TIMEOUT:
                 logger.info("Pestaña del navegador cerrada. Finalizando proceso de la aplicación...")
                 time.sleep(0.5)
                 os._exit(0)
         else:
-            # Si pasaron más de 120s sin que el navegador se haya conectado, auto-cerrar
-            if time.time() - STARTUP_TIME > 120.0:
+            # Si pasaron más de 180s sin que el navegador se haya conectado, auto-cerrar
+            if time.time() - STARTUP_TIME > 180.0:
                 os._exit(0)
 
 # Iniciar hilo de vigilancia
@@ -273,45 +274,76 @@ def get_base_dir() -> str:
         return sys._MEIPASS
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+def find_demo_file(rel_path: str) -> Optional[str]:
+    """Busca un archivo de demostración en MEIPASS, directorio actual o carpeta del ejecutable."""
+    base_dir = get_base_dir()
+    candidates = [
+        os.path.join(base_dir, rel_path),
+        os.path.join(os.getcwd(), rel_path),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), rel_path),
+        os.path.join(os.path.dirname(os.path.abspath(sys.executable if getattr(sys, 'frozen', False) else __file__)), rel_path)
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return None
+
 @app.post("/api/load_demo")
 async def load_demo():
-    """Carga automáticamente las 3 listas de prueba de la carpeta datos_prueba/."""
-    base_dir = get_base_dir()
-    demo_files = [
-        (0, os.path.join(base_dir, "datos_prueba", "Proveedor_1_Distribuidora_Norte.xlsx"), "Proveedor 1 (Norte)"),
-        (1, os.path.join(base_dir, "datos_prueba", "Proveedor_2_Mayorista_Central.csv"), "Proveedor 2 (Central)"),
-        (2, os.path.join(base_dir, "datos_prueba", "Proveedor_3_Supercenter_Nacional.xlsx"), "Proveedor 3 (Supercenter)")
+    """Carga automáticamente las 3 listas de prueba de la carpeta datos_prueba/ de forma asíncrona y segura."""
+    global LAST_HEARTBEAT
+    LAST_HEARTBEAT = time.time()
+    
+    demo_specs = [
+        (0, os.path.join("datos_prueba", "Proveedor_1_Distribuidora_Norte.xlsx"), "Proveedor 1 (Norte)"),
+        (1, os.path.join("datos_prueba", "Proveedor_2_Mayorista_Central.csv"), "Proveedor 2 (Central)"),
+        (2, os.path.join("datos_prueba", "Proveedor_3_Supercenter_Nacional.xlsx"), "Proveedor 3 (Supercenter)")
     ]
-    results = []
-    for idx, path, default_name in demo_files:
-        if os.path.exists(path):
-            with open(path, "rb") as f:
-                content = f.read()
-            filename = os.path.basename(path)
-            df, columns, warnings = parse_file_to_dataframe(content, filename)
-            detected_map = detect_column_mapping(columns)
+    
+    def process_demo_sync():
+        res = []
+        for idx, rel_path, default_name in demo_specs:
+            real_path = find_demo_file(rel_path)
+            if real_path and os.path.exists(real_path):
+                with open(real_path, "rb") as f:
+                    content = f.read()
+                filename = os.path.basename(real_path)
+                df, columns, warnings = parse_file_to_dataframe(content, filename)
+                detected_map = detect_column_mapping(columns)
+                
+                CURRENT_SESSION["raw_files"][idx] = {
+                    "filename": filename,
+                    "bytes": content,
+                    "df": df,
+                    "columns": columns,
+                    "warnings": warnings,
+                    "total_rows": len(df)
+                }
+                CURRENT_SESSION["mappings"][idx] = detected_map
+                CURRENT_SESSION["configs"][idx]["nombre"] = default_name
+                
+                res.append({
+                    "list_idx": idx,
+                    "filename": filename,
+                    "prov_name": default_name,
+                    "total_rows": len(df),
+                    "columns": columns,
+                    "detected_mapping": detected_map,
+                    "preview_rows": df.head(10).to_dict(orient="records")
+                })
+        return res
+
+    try:
+        results = await asyncio.to_thread(process_demo_sync)
+        LAST_HEARTBEAT = time.time()
+        
+        if not results:
+            raise HTTPException(status_code=404, detail="No se encontraron los archivos de prueba en la instalación.")
             
-            CURRENT_SESSION["raw_files"][idx] = {
-                "filename": filename,
-                "bytes": content,
-                "df": df,
-                "columns": columns,
-                "warnings": warnings,
-                "total_rows": len(df)
-            }
-            CURRENT_SESSION["mappings"][idx] = detected_map
-            CURRENT_SESSION["configs"][idx]["nombre"] = default_name
-            
-            results.append({
-                "list_idx": idx,
-                "filename": filename,
-                "prov_name": default_name,
-                "total_rows": len(df),
-                "columns": columns,
-                "detected_mapping": detected_map,
-                "preview_rows": df.head(10).to_dict(orient="records")
-            })
-    return {"success": True, "files": results}
+        return {"success": True, "files": results}
+    except Exception as e:
+        logger.exception("Error al cargar datos de prueba")
+        raise HTTPException(status_code=500, detail=f"Error al cargar archivos de prueba: {str(e)}")
 
 @app.get("/api/export/order/{list_idx}")
 async def export_order(list_idx: int):
