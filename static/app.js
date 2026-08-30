@@ -204,9 +204,9 @@ class PriceComparatorApp {
   }
 
   async loadDemoData() {
-    this.showLoading("Cargando 3 catálogos de prueba...", "Cargando 10.000 productos con precios y códigos de ejemplo");
+    this.showLoading("Cargando 3 catálogos de prueba...", "Cargando productos con precios y códigos de ejemplo");
     try {
-      const res = await fetch('/api/load_demo', { method: 'POST' });
+      const res = await fetch('/api/load_demo');
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Error al cargar datos de prueba');
 
