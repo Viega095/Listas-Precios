@@ -22,6 +22,21 @@ logger = logging.getLogger("PriceComparator")
 
 app = FastAPI(title="Comparador de Precios de Proveedores", version="1.0.0")
 
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+
+class PathFixMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        path = request.scope.get("path", "")
+        # Normalizar prefijos redundantes
+        for prefix in ["/api/index.py", "/index.py", "/api/index", "/index"]:
+            if path.startswith(prefix):
+                path = path[len(prefix):] or "/"
+                request.scope["path"] = path
+                break
+        return await call_next(request)
+
+app.add_middleware(PathFixMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -473,16 +488,23 @@ async def load_session(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al cargar sesión: {str(e)}")
 
-# Montar el Router bajo /api Y bajo raíz (para que nunca falle sin importar cómo Vercel rutee la URL)
+# Montar el Router bajo todos los prefijos posibles para compatibilidad total con Vercel
 app.include_router(router, prefix="/api")
 app.include_router(router, prefix="")
+app.include_router(router, prefix="/api/index.py")
+app.include_router(router, prefix="/index.py")
+app.include_router(router, prefix="/api/index")
+app.include_router(router, prefix="/index")
 
 # Montar archivos estáticos para la interfaz de usuario
-static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public")
+if not os.path.exists(static_dir):
+    static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/")
+@app.get("/index.html")
 async def root():
     index_file = os.path.join(static_dir, "index.html")
     if os.path.exists(index_file):
