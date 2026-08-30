@@ -23,34 +23,7 @@ class PriceComparatorApp {
   init() {
     this.bindEvents();
     this.renderConfigCards();
-    this.bindExitButton();
     lucide.createIcons();
-  }
-
-  bindExitButton() {
-    const btnExit = document.getElementById('btn-exit-app');
-    if (btnExit) {
-      btnExit.addEventListener('click', async () => {
-        if (confirm('¿Desea cerrar el Comparador de Precios y salir del programa?')) {
-          try {
-            await fetch('/api/shutdown', { method: 'POST' });
-          } catch (e) {}
-          document.body.innerHTML = `
-            <div class="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6 text-center">
-              <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 max-w-md shadow-2xl">
-                <div class="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                </div>
-                <h2 class="text-xl font-bold mb-2">Aplicación Finalizada</h2>
-                <p class="text-slate-400 text-sm mb-6">El servidor se ha detenido correctamente y se han liberado todos los recursos del sistema.</p>
-                <p class="text-xs text-slate-500">Ya puede cerrar esta pestaña del navegador de forma segura.</p>
-              </div>
-            </div>
-          `;
-          setTimeout(() => { window.close(); }, 1500);
-        }
-      });
-    }
   }
 
   bindEvents() {
