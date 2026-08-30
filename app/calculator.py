@@ -125,6 +125,7 @@ class PriceCalculator:
                 "match_status": g['match_status'],
                 "match_method": g['match_method'],
                 "confidence": g['confidence'],
+                "similitud": round(g.get('confidence', 0.0), 1),
                 "present_count": g['present_count'],
                 "es_dudoso": (g['match_status'] == 'dudoso')
             }
@@ -180,7 +181,6 @@ class PriceCalculator:
                     row["estado_precio"] = f"Más barato: {prov_name}"
 
                 diff_money = round(max_p - min_p, 2)
-                # Fórmula requerida: ((precio más caro - precio más barato) / precio más barato) * 100
                 diff_pct = round(((max_p - min_p) / min_p) * 100.0, 2) if min_p > 0 else 0.0
                 
                 row["precio_min"] = min_p
@@ -224,15 +224,21 @@ class PriceCalculator:
             (r['precio_min'] * r['cantidad']) for r in comparable_rows if r.get('precio_min') is not None
         ), 2)
 
-        # 4. Ahorro posible frente a cada lista (en valor monetario y porcentual)
+        # 4. Ahorro posible frente a cada lista (calculado sobre los artículos comparables que ofrece cada proveedor)
         ahorros = {}
         for l_idx in range(num_lists):
-            tot_list = totales_comparables.get(l_idx, 0.0)
-            ahorro_dinero = round(max(0.0, tot_list - total_optimo_comparables), 2)
-            ahorro_pct = round((ahorro_dinero / tot_list) * 100.0, 2) if tot_list > 0 else 0.0
+            key = f"precio_l{l_idx+1}"
+            rows_prov_comparables = [r for r in comparable_rows if r.get(key) is not None]
+            tot_list_comparable = round(sum(r[key] * r['cantidad'] for r in rows_prov_comparables), 2)
+            costo_optimo_items_prov = round(sum(r['precio_min'] * r['cantidad'] for r in rows_prov_comparables), 2)
+            
+            ahorro_dinero = round(max(0.0, tot_list_comparable - costo_optimo_items_prov), 2)
+            ahorro_pct = round((ahorro_dinero / tot_list_comparable) * 100.0, 2) if tot_list_comparable > 0 else 0.0
             ahorros[l_idx] = {
                 "ahorro_dinero": ahorro_dinero,
-                "ahorro_porcentaje": ahorro_pct
+                "ahorro_porcentaje": ahorro_pct,
+                "total_comparable": tot_list_comparable,
+                "costo_optimo": costo_optimo_items_prov
             }
 
         # 5. Diferencia total en dinero entre las tres listas (max total general - min total general)

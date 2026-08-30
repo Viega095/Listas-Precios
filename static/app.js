@@ -533,7 +533,7 @@ class PriceComparatorApp {
         <div class="space-y-1 text-xs">
           <div class="flex items-center gap-2">
             <span class="font-bold text-slate-800 text-sm">${r.producto}</span>
-            <span class="bg-amber-100 text-amber-800 border border-amber-300/60 px-2 py-0.5 rounded text-[10px] font-semibold">Similitud: ${r.similitud}%</span>
+            <span class="bg-amber-100 text-amber-800 border border-amber-300/60 px-2 py-0.5 rounded text-[10px] font-semibold">Similitud: ${Math.round(r.similitud || r.confidence || 0)}%</span>
           </div>
           <div class="text-slate-600 grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
             <div><b>${this.configs[0].nombre}:</b> ${r.desc_l1 || '<i>No presente</i>'} (${r.precio_l1 ? '$' + r.precio_l1 : '-'})</div>
