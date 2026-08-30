@@ -1,0 +1,24 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# PyInstaller / Build
+build/
+dist/
+*.spec
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# IDE / Editores
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db

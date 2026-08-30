@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comparador Profesional de Listas de Precios</title>
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              800: '#0c4a6e',
+              900: '#082f49',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- Encabezado Superior -->
+  <header class="bg-slate-900 text-white sticky top-0 z-50 shadow-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-sky-500 text-white p-2 rounded-lg shadow-inner">
+          <i data-lucide="scale" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white">
+            Comparador de Listas de Precios
+          </h1>
+        </div>
+      </div>
+
+      <!-- Acciones de Cabecera -->
+      <div class="flex items-center gap-2.5">
+        <button id="btn-save-session" class="hidden text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+          <i data-lucide="save" class="w-4 h-4"></i> Guardar Sesión
+        </button>
+        <label for="input-load-session" class="cursor-pointer text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+          <i data-lucide="folder-open" class="w-4 h-4"></i> Cargar Sesión
+          <input type="file" id="input-load-session" accept=".json" class="hidden">
+        </label>
+        <button id="btn-reset" class="text-xs bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/50 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i> Nueva Comparación
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Barra de Pasos / Wizard Navigation -->
+  <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-[61px] z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between overflow-x-auto py-2.5 gap-2 text-sm font-medium">
+        <button id="nav-step-1" class="step-btn active flex items-center gap-2 px-3 py-1.5 rounded-lg text-sky-700 bg-sky-50 font-semibold border border-sky-200">
+          <span class="w-5 h-5 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center font-bold">1</span>
+          Cargar Listas
+        </button>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
+        
+        <button id="nav-step-2" class="step-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50">
+          <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center font-bold">2</span>
+          Mapeo de Columnas
+        </button>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
+
+        <button id="nav-step-3" class="step-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50">
+          <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center font-bold">3</span>
+          Configurar IVA y Precios
+        </button>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
+
+        <button id="nav-step-4" class="step-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50">
+          <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center font-bold">4</span>
+          Revisión de Dudas
+          <span id="badge-dudosos" class="hidden bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+        </button>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
+
+        <button id="nav-step-5" class="step-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50">
+          <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center font-bold">5</span>
+          Resultados y Totales
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenido Principal -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+    <!-- Notificaciones / Alertas Globales -->
+    <div id="global-alert-container" class="mb-4 space-y-2"></div>
+
+    <!-- ========================================== -->
+    <!-- PASO 1: CARGA DE ARCHIVOS                  -->
+    <!-- ========================================== -->
+    <section id="section-step-1" class="step-section space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-start justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800">1. Carga de Listas de Precios</h2>
+            <p class="text-sm text-slate-500 mt-1">
+              Cargá hasta 3 listas en formatos <b>Excel (.xlsx, .xls)</b>, <b>CSV</b> o <b>PDF</b>.
+            </p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <button onclick="window.app.loadDemoData()" class="bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition">
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i> Cargar Datos de Ejemplo
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 Tarjetas de Carga -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+          
+          <!-- Lista 1 -->
+          <div class="border-2 border-dashed border-slate-300 hover:border-sky-500 transition rounded-xl p-5 bg-slate-50/50 flex flex-col justify-between file-card" id="file-card-0">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <input type="text" id="prov-name-0" value="Proveedor 1" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-36 outline-none">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-700">Lista A</span>
+              </div>
+              <div class="drop-zone py-8 px-4 text-center cursor-pointer border rounded-lg bg-white hover:bg-sky-50/40 border-slate-200 transition" onclick="document.getElementById('file-input-0').click()">
+                <i data-lucide="upload-cloud" class="w-10 h-10 text-sky-500 mx-auto mb-2"></i>
+                <p class="text-sm font-semibold text-slate-700">Arrastrá tu archivo aquí</p>
+                <p class="text-xs text-slate-400 mt-1">o hacé clic para explorar</p>
+                <input type="file" id="file-input-0" class="hidden" accept=".xlsx,.xls,.csv,.txt,.pdf" onchange="window.app.handleFileSelect(0, this.files[0])">
+              </div>
+            </div>
+            <div id="file-info-0" class="mt-4 hidden text-xs bg-sky-50 border border-sky-100 p-3 rounded-lg">
+              <div class="flex items-center justify-between font-bold text-sky-900">
+                <span class="truncate max-w-[170px]" id="file-name-0">archivo.xlsx</span>
+                <button onclick="window.app.removeFile(0)" class="text-rose-500 hover:text-rose-700"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              </div>
+              <p class="text-slate-600 mt-1" id="file-rows-0">0 filas leídas</p>
+            </div>
+          </div>
+
+          <!-- Lista 2 -->
+          <div class="border-2 border-dashed border-slate-300 hover:border-sky-500 transition rounded-xl p-5 bg-slate-50/50 flex flex-col justify-between file-card" id="file-card-1">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <input type="text" id="prov-name-1" value="Proveedor 2" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-36 outline-none">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-700">Lista B</span>
+              </div>
+              <div class="drop-zone py-8 px-4 text-center cursor-pointer border rounded-lg bg-white hover:bg-sky-50/40 border-slate-200 transition" onclick="document.getElementById('file-input-1').click()">
+                <i data-lucide="upload-cloud" class="w-10 h-10 text-sky-500 mx-auto mb-2"></i>
+                <p class="text-sm font-semibold text-slate-700">Arrastrá tu archivo aquí</p>
+                <p class="text-xs text-slate-400 mt-1">o hacé clic para explorar</p>
+                <input type="file" id="file-input-1" class="hidden" accept=".xlsx,.xls,.csv,.txt,.pdf" onchange="window.app.handleFileSelect(1, this.files[0])">
+              </div>
+            </div>
+            <div id="file-info-1" class="mt-4 hidden text-xs bg-sky-50 border border-sky-100 p-3 rounded-lg">
+              <div class="flex items-center justify-between font-bold text-sky-900">
+                <span class="truncate max-w-[170px]" id="file-name-1">archivo.xlsx</span>
+                <button onclick="window.app.removeFile(1)" class="text-rose-500 hover:text-rose-700"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              </div>
+              <p class="text-slate-600 mt-1" id="file-rows-1">0 filas leídas</p>
+            </div>
+          </div>
+
+          <!-- Lista 3 -->
+          <div class="border-2 border-dashed border-slate-300 hover:border-sky-500 transition rounded-xl p-5 bg-slate-50/50 flex flex-col justify-between file-card" id="file-card-2">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <input type="text" id="prov-name-2" value="Proveedor 3" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-36 outline-none">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-700">Lista C (Opcional)</span>
+              </div>
+              <div class="drop-zone py-8 px-4 text-center cursor-pointer border rounded-lg bg-white hover:bg-sky-50/40 border-slate-200 transition" onclick="document.getElementById('file-input-2').click()">
+                <i data-lucide="upload-cloud" class="w-10 h-10 text-sky-500 mx-auto mb-2"></i>
+                <p class="text-sm font-semibold text-slate-700">Arrastrá tu archivo aquí</p>
+                <p class="text-xs text-slate-400 mt-1">o hacé clic para explorar</p>
+                <input type="file" id="file-input-2" class="hidden" accept=".xlsx,.xls,.csv,.txt,.pdf" onchange="window.app.handleFileSelect(2, this.files[0])">
+              </div>
+            </div>
+            <div id="file-info-2" class="mt-4 hidden text-xs bg-sky-50 border border-sky-100 p-3 rounded-lg">
+              <div class="flex items-center justify-between font-bold text-sky-900">
+                <span class="truncate max-w-[170px]" id="file-name-2">archivo.xlsx</span>
+                <button onclick="window.app.removeFile(2)" class="text-rose-500 hover:text-rose-700"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              </div>
+              <p class="text-slate-600 mt-1" id="file-rows-2">0 filas leídas</p>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="mt-8 flex justify-end">
+          <button id="btn-goto-step-2" onclick="window.app.goToStep(2)" disabled class="bg-sky-600 hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg shadow flex items-center gap-2 transition">
+            Continuar al Mapeo de Columnas <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- PASO 2: MAPEO DE COLUMNAS INTELIGENTE      -->
+    <!-- ========================================== -->
+    <section id="section-step-2" class="step-section hidden space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800">2. Revisión y Mapeo de Columnas</h2>
+            <p class="text-sm text-slate-500">
+              El sistema identificó automáticamente las columnas. Confirmá o modificá la asignación si es necesario.
+            </p>
+          </div>
+          <!-- Selector de lista a configurar -->
+          <div class="flex gap-2" id="mapping-list-tabs"></div>
+        </div>
+
+        <div id="mapping-container" class="space-y-6">
+          <!-- Contenido dinámico del mapeo generado por app.js -->
+        </div>
+
+        <div class="mt-8 flex justify-between border-t border-slate-200 pt-5">
+          <button onclick="window.app.goToStep(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-lg flex items-center gap-2">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver a Carga
+          </button>
+          <button onclick="window.app.goToStep(3)" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow flex items-center gap-2">
+            Confirmar y Configurar Precios <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- PASO 3: CONFIGURACIÓN FINANCIERA E IVA     -->
+    <!-- ========================================== -->
+    <section id="section-step-3" class="step-section hidden space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800">3. Configuración de Precios, IVA y Descuentos</h2>
+            <p class="text-sm text-slate-500 mt-1">
+              Personalizá el tratamiento de IVA o descuentos si tus listas vienen sin impuestos.
+            </p>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 px-3.5 py-2 rounded-xl text-xs flex items-center gap-2 shadow-xs">
+            <i data-lucide="sparkles" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+            <span><b>Tip simple:</b> Si los precios ya son finales, ¡dejá todo como está y procesá directo!</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6" id="configs-container">
+          <!-- Tarjetas de configuración generadas por app.js -->
+        </div>
+
+        <div class="mt-8 flex justify-between border-t border-slate-200 pt-5">
+          <button onclick="window.app.goToStep(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-lg flex items-center gap-2">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver a Mapeo
+          </button>
+          <button id="btn-start-process" onclick="window.app.processComparison()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-7 py-2.5 rounded-lg shadow flex items-center gap-2 text-base transition">
+            <i data-lucide="play" class="w-5 h-5"></i> Procesar y Comparar Listas
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- PASO 4: REVISIÓN DE COINCIDENCIAS DUDOSAS  -->
+    <!-- ========================================== -->
+    <section id="section-step-4" class="step-section hidden space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <i data-lucide="help-circle" class="w-6 h-6 text-amber-500"></i>
+              4. Revisión de Coincidencias Dudosas
+            </h2>
+            <p class="text-sm text-slate-500 mt-1">
+              Estos productos tienen nombres similares pero no exactos. Podés confirmar si son el mismo producto o separarlos individual o masivamente.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="window.app.overrideAll('confirm_all')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition">
+              <i data-lucide="check-check" class="w-4 h-4"></i> Confirmar Todos
+            </button>
+            <button onclick="window.app.overrideAll('unlink_all')" class="bg-slate-600 hover:bg-slate-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition">
+              <i data-lucide="split" class="w-4 h-4"></i> Separar Todos
+            </button>
+            <button onclick="window.app.goToStep(5)" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition">
+              Ver Resultados <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="doubtful-list-container" class="mt-6 space-y-4">
+          <!-- Items dudosos generados por app.js -->
+        </div>
+
+        <div id="no-doubtful-msg" class="hidden py-12 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+          <i data-lucide="check-check" class="w-12 h-12 text-emerald-500 mx-auto mb-2"></i>
+          <h3 class="text-base font-bold text-slate-700">¡Todo claro!</h3>
+          <p class="text-sm text-slate-400">No hay coincidencias dudosas pendientes de revisión.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- PASO 5: RESULTADOS, DASHBOARD Y TABLA      -->
+    <!-- ========================================== -->
+    <section id="section-step-5" class="step-section hidden space-y-6">
+      
+      <!-- Panel Superior de Métricas y Totales (Dashboard KPI) -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="kpi-cards-container">
+        <!-- Tarjeta 1: Total Óptimo -->
+        <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 rounded-xl shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-emerald-100">Canasta Óptima</span>
+            <i data-lucide="badge-dollar-sign" class="w-5 h-5 text-emerald-200"></i>
+          </div>
+          <p class="text-2xl font-black mt-2" id="kpi-total-optimo">$0.00</p>
+          <p class="text-xs text-emerald-100 mt-1" id="kpi-total-optimo-sub">Comprando artículos comparables al más barato</p>
+        </div>
+
+        <!-- Tarjeta 2: Ahorro Máximo -->
+        <div class="bg-gradient-to-br from-sky-600 to-blue-700 text-white p-5 rounded-xl shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-sky-100">Ahorro Máximo</span>
+            <i data-lucide="trending-down" class="w-5 h-5 text-sky-200"></i>
+          </div>
+          <p class="text-2xl font-black mt-2" id="kpi-max-ahorro">$0.00</p>
+          <p class="text-xs text-sky-100 mt-1" id="kpi-max-ahorro-pct">0.00% de ahorro potencial</p>
+        </div>
+
+        <!-- Tarjeta 3: Total Productos Procesados -->
+        <div class="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
+          <div class="flex items-center justify-between text-slate-500">
+            <span class="text-xs font-semibold uppercase tracking-wider">Productos Totales</span>
+            <i data-lucide="layers" class="w-5 h-5 text-slate-400"></i>
+          </div>
+          <p class="text-2xl font-black text-slate-800 mt-2" id="kpi-total-items">0</p>
+          <p class="text-xs text-slate-500 mt-1" id="kpi-items-detail">Artículos procesados</p>
+        </div>
+
+        <!-- Tarjeta 4: Resumen de Ganadores -->
+        <div class="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
+          <div class="flex items-center justify-between text-slate-500">
+            <span class="text-xs font-semibold uppercase tracking-wider">Líderes en Precio</span>
+            <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i>
+          </div>
+          <div class="text-xs space-y-1 mt-2 text-slate-600" id="kpi-cheapest-leaders">
+            <!-- Dinámico -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta de Recomendación Estratégica Directa (Fácil de entender) -->
+      <div class="bg-gradient-to-r from-amber-50 via-sky-50 to-emerald-50 border border-sky-200 p-5 rounded-2xl shadow-sm space-y-2.5" id="card-executive-advice">
+        <div class="flex items-center gap-2 text-slate-900 font-black text-sm">
+          <i data-lucide="lightbulb" class="w-5 h-5 text-amber-500 animate-bounce"></i>
+          <span>Recomendación Inteligente de Compra (Explicado Simple)</span>
+        </div>
+        <div class="text-xs text-slate-700 space-y-1.5 leading-relaxed" id="text-executive-advice">
+          <!-- Generado dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Resumen Comparativo de Proveedores (Totales y Ahorro por Lista) -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <i data-lucide="bar-chart-3" class="w-4 h-4 text-sky-600"></i>
+            Resumen Financiero Comparativo
+          </h3>
+          <span class="text-xs text-slate-500" id="txt-diferencia-total-listas"></span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left border-collapse" id="table-summary-providers">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-b border-slate-200 font-bold">
+                <th class="py-2.5 px-3">Proveedor / Escenario</th>
+                <th class="py-2.5 px-3 text-right">Total Comparables</th>
+                <th class="py-2.5 px-3 text-right">Total General</th>
+                <th class="py-2.5 px-3 text-right">Ahorro Posible ($)</th>
+                <th class="py-2.5 px-3 text-right">Ahorro (%)</th>
+                <th class="py-2.5 px-3 text-center">Prod. Más Baratos</th>
+                <th class="py-2.5 px-3 text-center">Exclusivos</th>
+                <th class="py-2.5 px-3 text-center">Pedido Listo</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-summary-providers" class="divide-y divide-slate-100">
+              <!-- Dinámico -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros, Búsqueda y Exportación -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+          
+          <!-- Búsqueda Instantánea -->
+          <div class="relative w-full md:w-80">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+            <input type="text" id="filter-search" placeholder="Buscar por producto, código, marca..." class="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500">
+          </div>
+
+          <!-- Filtros Rápidos -->
+          <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <select id="filter-status" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-white text-slate-700">
+              <option value="all">Todos los estados</option>
+              <option value="en_3_listas">Presentes en 3 listas</option>
+              <option value="en_2_listas">Presentes en 2 listas</option>
+              <option value="exclusivo">Productos exclusivos</option>
+              <option value="precio_igual">Mismo precio en todas</option>
+              <option value="dudoso">Dudosos / Sin confirmar</option>
+            </select>
+
+            <select id="filter-diff-range" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-white text-slate-700">
+              <option value="all">Cualquier diferencia %</option>
+              <option value="gt_50">Diferencia > 50%</option>
+              <option value="gt_25">Diferencia > 25%</option>
+              <option value="gt_10">Diferencia > 10%</option>
+              <option value="equal">Diferencia 0% (Iguales)</option>
+            </select>
+
+            <select id="filter-provider" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-white text-slate-700">
+              <option value="all">Todos los proveedores</option>
+              <option value="0">Más barato en Proveedor 1</option>
+              <option value="1">Más barato en Proveedor 2</option>
+              <option value="2">Más barato en Proveedor 3</option>
+            </select>
+
+            <select id="filter-sort" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-white text-slate-700 font-medium">
+              <option value="diff_pct_desc">Mayor diferencia % (Descendente)</option>
+              <option value="diff_money_desc">Mayor ahorro $ (Descendente)</option>
+              <option value="name_asc">Nombre del producto (A-Z)</option>
+              <option value="price_min_asc">Precio más bajo (Ascendente)</option>
+              <option value="price_min_desc">Precio más alto (Descendente)</option>
+            </select>
+          </div>
+
+          <!-- Botones de Exportación -->
+          <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+            <button onclick="window.app.exportFile('excel')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel
+            </button>
+            <button onclick="window.app.exportFile('csv')" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition">
+              <i data-lucide="file-text" class="w-4 h-4"></i> CSV
+            </button>
+            <button onclick="window.app.exportFile('pdf')" class="bg-rose-700 hover:bg-rose-800 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition">
+              <i data-lucide="file-down" class="w-4 h-4"></i> PDF
+            </button>
+            <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition">
+              <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-100">
+          <span id="txt-table-count">Mostrando 0 de 0 productos</span>
+          <span class="text-slate-500 font-medium">Tip: Hacé clic en cualquier fila para ver el desglose detallado del producto</span>
+        </div>
+      </div>
+
+      <!-- Tabla Completa de Comparación (100% de productos) con Contraste Alternado Inteligente -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto max-h-[700px] overflow-y-auto">
+          <table class="w-full text-xs text-left border-collapse" id="main-comparison-table">
+            <thead class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+              <tr>
+                <th class="py-3 px-3 w-10 text-center sticky-header sticky-col-1 bg-slate-900 border-r border-slate-700">#</th>
+                <th class="py-3 px-3 min-w-[240px] sticky-header sticky-col-2 bg-slate-900 border-r border-slate-700">Producto / Descripción</th>
+                <th class="py-3 px-3">Código</th>
+                <th class="py-3 px-3">Marca</th>
+                <th class="py-3 px-3">Pres.</th>
+                <th class="py-3 px-3 text-center">Cant.</th>
+                <th class="py-3 px-3 text-right bg-slate-800/90" id="th-prov-0">Precio Prov 1</th>
+                <th class="py-3 px-3 text-right bg-slate-800/90" id="th-prov-1">Precio Prov 2</th>
+                <th class="py-3 px-3 text-right bg-slate-800/90" id="th-prov-2">Precio Prov 3</th>
+                <th class="py-3 px-3">Más Barato</th>
+                <th class="py-3 px-3 text-right">Dif. Dinero</th>
+                <th class="py-3 px-3 text-right">Dif. %</th>
+                <th class="py-3 px-3 text-center">Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-comparison-rows" class="font-normal divide-y divide-slate-200">
+              <!-- Filas generadas por app.js con paginación/virtualización y zebra striping -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación Visual de Navegación Rápida -->
+        <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-slate-600 font-medium">Filas por página:</span>
+            <select id="select-page-size" class="border border-slate-300 rounded px-2 py-1 bg-white">
+              <option value="50">50</option>
+              <option value="100" selected>100</option>
+              <option value="250">250</option>
+              <option value="500">500</option>
+              <option value="1000">1000</option>
+              <option value="all">Todas las filas</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btn-prev-page" class="px-3 py-1 bg-white border border-slate-300 rounded font-medium hover:bg-slate-100 disabled:opacity-40 transition">Anterior</button>
+            <span id="txt-pagination-info" class="text-slate-700 font-semibold px-2">Página 1 de 1</span>
+            <button id="btn-next-page" class="px-3 py-1 bg-white border border-slate-300 rounded font-medium hover:bg-slate-100 disabled:opacity-40 transition">Siguiente</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Modal Detalle Completo de Producto (Desglose individual) -->
+  <div id="product-detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4 border border-slate-200 relative">
+      <button onclick="document.getElementById('product-detail-modal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 font-bold text-lg">✕</button>
+      
+      <div class="border-b border-slate-100 pb-3">
+        <span class="text-xs font-semibold px-2 py-0.5 rounded bg-sky-100 text-sky-800" id="modal-status-badge">Estado</span>
+        <h3 class="text-lg font-bold text-slate-900 mt-1" id="modal-product-title">Nombre del Producto</h3>
+        <p class="text-xs text-slate-500" id="modal-product-meta">Código / Marca / Presentación</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs" id="modal-providers-breakdown">
+        <!-- 3 tarjetas de proveedores dinámicas -->
+      </div>
+
+      <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1" id="modal-diff-breakdown">
+        <!-- Resumen de diferencia y fórmula -->
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="document.getElementById('product-detail-modal').classList.add('hidden')" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-lg">
+          Cerrar Detalle
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal / Loader de Progreso -->
+  <div id="loading-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center">
+    <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center space-y-4 border border-slate-200">
+      <div class="animate-spin w-12 h-12 border-4 border-sky-600 border-t-transparent rounded-full mx-auto"></div>
+      <h3 class="text-base font-bold text-slate-800" id="loading-title">Procesando productos...</h3>
+      <p class="text-xs text-slate-500" id="loading-desc">Leyendo 100% de las filas y normalizando equivalencias de catálogo.</p>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
