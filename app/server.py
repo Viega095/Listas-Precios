@@ -22,26 +22,6 @@ import threading
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("PriceComparator")
 
-LAST_HEARTBEAT = time.time()
-HEARTBEAT_TIMEOUT = 60.0 # Segundos de gracia sin latidos tras haber conectado (1 minuto)
-AUTO_SHUTDOWN_ENABLED = True
-FIRST_HEARTBEAT_RECEIVED = False
-STARTUP_TIME = time.time()
-
-def watchdog_loop():
-    """Monitorea que la pestaña del navegador siga abierta. Si se cierra tras haber conectado, termina el proceso."""
-    global LAST_HEARTBEAT, FIRST_HEARTBEAT_RECEIVED
-    while AUTO_SHUTDOWN_ENABLED:
-        time.sleep(3)
-        if FIRST_HEARTBEAT_RECEIVED:
-            if time.time() - LAST_HEARTBEAT > HEARTBEAT_TIMEOUT:
-                logger.info("Pestaña del navegador cerrada. Finalizando proceso de la aplicación...")
-                time.sleep(0.5)
-                os._exit(0)
-
-# Iniciar hilo de vigilancia
-threading.Thread(target=watchdog_loop, daemon=True).start()
-
 app = FastAPI(title="Comparador de Precios de Proveedores", version="1.0.0")
 
 app.add_middleware(
@@ -52,19 +32,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/api/health")
+@app.post("/api/health")
+@app.get("/api/heartbeat")
 @app.post("/api/heartbeat")
-async def heartbeat():
-    """Endpoint de latido periódico enviado por el frontend mientras la pestaña esté abierta."""
-    global LAST_HEARTBEAT, FIRST_HEARTBEAT_RECEIVED
-    FIRST_HEARTBEAT_RECEIVED = True
-    LAST_HEARTBEAT = time.time()
-    return {"status": "alive"}
+async def health_check():
+    """Endpoint de estado para verificar que el servidor está 100% activo."""
+    return {"status": "ok"}
 
 @app.post("/api/shutdown")
 async def shutdown():
-    """Cierra el proceso inmediatamente cuando el navegador envía sendBeacon en beforeunload."""
+    """Cierra el servidor de forma segura a petición del usuario."""
     def delayed_exit():
-        time.sleep(0.3)
+        time.sleep(0.5)
         os._exit(0)
     threading.Thread(target=delayed_exit, daemon=True).start()
     return {"status": "shutting_down"}

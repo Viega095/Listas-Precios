@@ -21,8 +21,7 @@ def is_port_in_use(port: int) -> bool:
 # Si ya hay una instancia corriendo en el puerto 8000, solo abrir navegador y salir
 if is_port_in_use(8000):
     try:
-        req = urllib.request.Request("http://127.0.0.1:8000/api/heartbeat", data=b"{}", headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=1) as resp:
+        with urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=1) as resp:
             if resp.status == 200:
                 webbrowser.open("http://127.0.0.1:8000")
                 sys.exit(0)
@@ -33,6 +32,7 @@ from app.server import app
 import uvicorn
 
 splash_root = None
+browser_opened = False
 
 def show_splash():
     """Muestra una mini ventana gráfica moderna mientras arranca el ejecutable."""
@@ -89,7 +89,7 @@ def close_splash():
             pass
 
 def server_runner():
-    """Ejecuta el servidor FastAPI con Uvicorn."""
+    """Ejecuta el servidor FastAPI con Uvicorn de forma permanente."""
     uvicorn.run(
         app,
         host="127.0.0.1",
@@ -99,30 +99,34 @@ def server_runner():
     )
 
 def wait_and_open_browser():
-    """Espera a que FastAPI responda 200 OK antes de abrir el navegador y cerrar el splash."""
-    heartbeat_url = "http://127.0.0.1:8000/api/heartbeat"
+    """Espera a que FastAPI responda 200 OK antes de abrir exactamente 1 navegador y cerrar el splash."""
+    global browser_opened
+    health_url = "http://127.0.0.1:8000/api/health"
     app_url = "http://127.0.0.1:8000"
     
     for _ in range(120): # hasta 60 segundos
         try:
-            req = urllib.request.Request(heartbeat_url, data=b"{}", headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=1) as resp:
+            with urllib.request.urlopen(health_url, timeout=1) as resp:
                 if resp.status == 200:
-                    time.sleep(0.4)
-                    webbrowser.open(app_url)
+                    if not browser_opened:
+                        browser_opened = True
+                        time.sleep(0.3)
+                        webbrowser.open(app_url)
                     close_splash()
                     return
         except Exception:
             time.sleep(0.5)
             
-    webbrowser.open(app_url)
+    if not browser_opened:
+        browser_opened = True
+        webbrowser.open(app_url)
     close_splash()
 
 if __name__ == "__main__":
     # Iniciar servidor Uvicorn en segundo plano
     threading.Thread(target=server_runner, daemon=True).start()
     
-    # Iniciar chequeo de readiness y apertura de navegador en segundo plano
+    # Iniciar chequeo de readiness y apertura única de navegador en segundo plano
     threading.Thread(target=wait_and_open_browser, daemon=True).start()
     
     # Mostrar la mini interfaz gráfica de inicio en el hilo principal
