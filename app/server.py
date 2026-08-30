@@ -22,19 +22,25 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("PriceComparator")
 
 LAST_HEARTBEAT = time.time()
-HEARTBEAT_TIMEOUT = 10.0 # Segundos de gracia sin latidos antes de auto-cerrar
+HEARTBEAT_TIMEOUT = 10.0 # Segundos de gracia sin latidos tras haber conectado
 AUTO_SHUTDOWN_ENABLED = True
+FIRST_HEARTBEAT_RECEIVED = False
+STARTUP_TIME = time.time()
 
 def watchdog_loop():
     """Monitorea que la pestaña del navegador siga abierta. Si se cierra, termina el proceso de fondo."""
-    global LAST_HEARTBEAT
-    time.sleep(6) # Esperar a que el navegador se abra
+    global LAST_HEARTBEAT, FIRST_HEARTBEAT_RECEIVED
     while AUTO_SHUTDOWN_ENABLED:
         time.sleep(2)
-        if time.time() - LAST_HEARTBEAT > HEARTBEAT_TIMEOUT:
-            logger.info("Pestaña del navegador cerrada. Finalizando proceso de la aplicación...")
-            time.sleep(0.5)
-            os._exit(0)
+        if FIRST_HEARTBEAT_RECEIVED:
+            if time.time() - LAST_HEARTBEAT > HEARTBEAT_TIMEOUT:
+                logger.info("Pestaña del navegador cerrada. Finalizando proceso de la aplicación...")
+                time.sleep(0.5)
+                os._exit(0)
+        else:
+            # Si pasaron más de 120s sin que el navegador se haya conectado, auto-cerrar
+            if time.time() - STARTUP_TIME > 120.0:
+                os._exit(0)
 
 # Iniciar hilo de vigilancia
 threading.Thread(target=watchdog_loop, daemon=True).start()
@@ -52,7 +58,8 @@ app.add_middleware(
 @app.post("/api/heartbeat")
 async def heartbeat():
     """Endpoint de latido periódico enviado por el frontend mientras la pestaña esté abierta."""
-    global LAST_HEARTBEAT
+    global LAST_HEARTBEAT, FIRST_HEARTBEAT_RECEIVED
+    FIRST_HEARTBEAT_RECEIVED = True
     LAST_HEARTBEAT = time.time()
     return {"status": "alive"}
 

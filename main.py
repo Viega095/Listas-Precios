@@ -15,9 +15,24 @@ if sys.stderr is None:
 from app.server import app
 
 def open_browser():
-    time.sleep(1.5)
-    url = "http://127.0.0.1:8000"
-    webbrowser.open(url)
+    """Espera activamente a que el servidor FastAPI esté 100% levantado antes de abrir el navegador."""
+    import urllib.request
+    heartbeat_url = "http://127.0.0.1:8000/api/heartbeat"
+    app_url = "http://127.0.0.1:8000"
+    
+    for _ in range(120): # Intentar hasta 60 segundos
+        try:
+            req = urllib.request.Request(heartbeat_url, data=b"{}", headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=1) as resp:
+                if resp.status == 200:
+                    time.sleep(0.3)
+                    webbrowser.open(app_url)
+                    return
+        except Exception:
+            time.sleep(0.5)
+            
+    # Si tardó más del tiempo esperado, intentar abrir de todas formas
+    webbrowser.open(app_url)
 
 if __name__ == "__main__":
     # Iniciar hilo para abrir el navegador web automáticamente
