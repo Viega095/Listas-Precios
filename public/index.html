@@ -98,9 +98,9 @@
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 class="text-xl font-bold text-slate-800">1. Carga de Listas a Comparar</h2>
+            <h2 class="text-xl font-bold text-slate-800">Cargar Listas de Precios</h2>
             <p class="text-sm text-slate-500 mt-1">
-              Cargá <b>2 listas de precios</b> (o sumá una 3ª lista opcional) en formato <b>PDF</b>, <b>Excel (.xlsx, .xls)</b> o <b>CSV</b>.
+              Subí <b>2 listas de precios</b> (o sumá una 3ª opcional) en formato <b>PDF</b>, <b>Excel (.xlsx, .xls)</b> o <b>CSV</b>.
             </p>
           </div>
           <div class="flex items-center gap-2.5">
@@ -110,14 +110,14 @@
           </div>
         </div>
 
-        <!-- Tarjetas de Carga Dinámicas -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6" id="upload-cards-container">
+        <!-- 3 Columnas: Lista 1, Lista 2, y Slot 3 para Agregar 3ª Lista -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6" id="upload-cards-container">
           
           <!-- Lista 1 -->
           <div class="border-2 border-dashed border-slate-300 hover:border-sky-500 transition rounded-xl p-5 bg-slate-50/50 flex flex-col justify-between file-card" id="file-card-0">
             <div>
               <div class="flex items-center justify-between mb-3">
-                <input type="text" id="prov-name-0" value="Lista 1 (Ej: 21/08)" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-44 outline-none">
+                <input type="text" id="prov-name-0" value="Lista 1" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-36 outline-none">
                 <span class="text-xs font-semibold px-2 py-0.5 rounded bg-sky-100 text-sky-800">Lista A</span>
               </div>
               <div class="drop-zone py-8 px-4 text-center cursor-pointer border rounded-lg bg-white hover:bg-sky-50/40 border-slate-200 transition" onclick="document.getElementById('file-input-0').click()">
@@ -140,7 +140,7 @@
           <div class="border-2 border-dashed border-slate-300 hover:border-sky-500 transition rounded-xl p-5 bg-slate-50/50 flex flex-col justify-between file-card" id="file-card-1">
             <div>
               <div class="flex items-center justify-between mb-3">
-                <input type="text" id="prov-name-1" value="Lista 2 (Ej: 29/08)" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-44 outline-none">
+                <input type="text" id="prov-name-1" value="Lista 2" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-36 outline-none">
                 <span class="text-xs font-semibold px-2 py-0.5 rounded bg-sky-100 text-sky-800">Lista B</span>
               </div>
               <div class="drop-zone py-8 px-4 text-center cursor-pointer border rounded-lg bg-white hover:bg-sky-50/40 border-slate-200 transition" onclick="document.getElementById('file-input-1').click()">
@@ -159,12 +159,23 @@
             </div>
           </div>
 
-          <!-- Lista 3 (Opcional) -->
+          <!-- Slot 3: Botón para Agregar 3ª Lista (Placeholder) -->
+          <div id="card-placeholder-3" onclick="window.app.toggleThirdList()" class="border-2 border-dashed border-slate-300 hover:border-sky-500 hover:bg-sky-50/40 transition rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer min-h-[220px] group">
+            <div class="w-12 h-12 rounded-full bg-slate-100 group-hover:bg-sky-100 flex items-center justify-center text-slate-400 group-hover:text-sky-600 mb-3 transition">
+              <i data-lucide="plus" class="w-6 h-6"></i>
+            </div>
+            <p class="font-bold text-sm text-slate-700 group-hover:text-sky-700">➕ Agregar 3ª Lista</p>
+            <p class="text-xs text-slate-400 mt-1">Opcional para comparar 3 listas</p>
+          </div>
+
+          <!-- Slot 3: Dropzone real (oculto hasta hacer clic) -->
           <div class="border-2 border-dashed border-slate-300 hover:border-sky-500 transition rounded-xl p-5 bg-slate-50/50 flex flex-col justify-between file-card hidden" id="file-card-2">
             <div>
               <div class="flex items-center justify-between mb-3">
-                <input type="text" id="prov-name-2" value="Lista 3 (Opcional)" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-44 outline-none">
-                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-700">Lista C (Opcional)</span>
+                <input type="text" id="prov-name-2" value="Lista 3" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-36 outline-none">
+                <button type="button" onclick="window.app.toggleThirdList()" class="text-slate-400 hover:text-rose-500 text-xs font-semibold flex items-center gap-1" title="Quitar 3ª lista">
+                  <i data-lucide="x" class="w-4 h-4"></i> Quitar
+                </button>
               </div>
               <div class="drop-zone py-8 px-4 text-center cursor-pointer border rounded-lg bg-white hover:bg-sky-50/40 border-slate-200 transition" onclick="document.getElementById('file-input-2').click()">
                 <i data-lucide="upload-cloud" class="w-10 h-10 text-sky-500 mx-auto mb-2"></i>
@@ -182,13 +193,6 @@
             </div>
           </div>
 
-        </div>
-
-        <!-- Botón para Sumar 3ª Lista Opcional -->
-        <div class="mt-4" id="container-btn-add-list">
-          <button type="button" onclick="window.app.toggleThirdList()" id="btn-toggle-third-list" class="text-xs text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200 font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition">
-            <i data-lucide="plus-circle" class="w-4 h-4 text-sky-600"></i> Agregar una 3ª lista de precios (opcional)
-          </button>
         </div>
 
         <!-- Botón Principal de Comparación -->

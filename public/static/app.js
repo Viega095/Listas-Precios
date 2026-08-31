@@ -211,17 +211,17 @@ class PriceComparatorApp {
 
   toggleThirdList() {
     const card2 = document.getElementById('file-card-2');
-    const btn = document.getElementById('btn-toggle-third-list');
+    const placeholder = document.getElementById('card-placeholder-3');
     if (!card2) return;
     if (card2.classList.contains('hidden')) {
       card2.classList.remove('hidden');
-      if (btn) btn.innerHTML = `<i data-lucide="minus-circle" class="w-4 h-4 text-slate-500"></i> Ocultar 3ª lista`;
+      if (placeholder) placeholder.classList.add('hidden');
     } else {
       if (this.uploadedFiles[2]) {
         this.removeFile(2);
       }
       card2.classList.add('hidden');
-      if (btn) btn.innerHTML = `<i data-lucide="plus-circle" class="w-4 h-4 text-sky-600"></i> Agregar una 3ª lista de precios (opcional)`;
+      if (placeholder) placeholder.classList.remove('hidden');
     }
     lucide.createIcons();
   }
@@ -234,8 +234,7 @@ class PriceComparatorApp {
       if (!res.ok) throw new Error(data.detail || 'Error al cargar datos de prueba');
 
       document.getElementById('file-card-2')?.classList.remove('hidden');
-      const btn = document.getElementById('btn-toggle-third-list');
-      if (btn) btn.innerHTML = `<i data-lucide="minus-circle" class="w-4 h-4 text-slate-500"></i> Ocultar 3ª lista`;
+      document.getElementById('card-placeholder-3')?.classList.add('hidden');
 
       data.files.forEach(f => {
         const idx = f.list_idx;
