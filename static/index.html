@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Comparador Profesional de Listas de Precios</title>
+  <title>Comparador de Listas de Precios</title>
   <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -73,7 +73,7 @@
           
           <button id="nav-step-5" onclick="window.app.goToStep(5)" class="step-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50 transition">
             <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center font-bold">2</span>
-            Resultados y Pedidos
+            Comparación de Precios
             <span id="badge-dudosos" class="hidden bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
           </button>
         </div>
@@ -98,9 +98,9 @@
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 class="text-xl font-bold text-slate-800">1. Carga de Listas de Precios</h2>
+            <h2 class="text-xl font-bold text-slate-800">1. Carga de Listas a Comparar</h2>
             <p class="text-sm text-slate-500 mt-1">
-              Arrastrá o seleccioná hasta 3 listas en <b>Excel (.xlsx, .xls)</b>, <b>CSV</b> o <b>PDF</b>.
+              Cargá <b>2 listas de precios</b> (o sumá una 3ª lista opcional) en formato <b>PDF</b>, <b>Excel (.xlsx, .xls)</b> o <b>CSV</b>.
             </p>
           </div>
           <div class="flex items-center gap-2.5">
@@ -110,26 +110,26 @@
           </div>
         </div>
 
-        <!-- 3 Tarjetas de Carga -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        <!-- Tarjetas de Carga Dinámicas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6" id="upload-cards-container">
           
           <!-- Lista 1 -->
           <div class="border-2 border-dashed border-slate-300 hover:border-sky-500 transition rounded-xl p-5 bg-slate-50/50 flex flex-col justify-between file-card" id="file-card-0">
             <div>
               <div class="flex items-center justify-between mb-3">
-                <input type="text" id="prov-name-0" value="Proveedor 1" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-36 outline-none">
-                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-700">Lista A</span>
+                <input type="text" id="prov-name-0" value="Lista 1 (Ej: 21/08)" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-44 outline-none">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-sky-100 text-sky-800">Lista A</span>
               </div>
               <div class="drop-zone py-8 px-4 text-center cursor-pointer border rounded-lg bg-white hover:bg-sky-50/40 border-slate-200 transition" onclick="document.getElementById('file-input-0').click()">
                 <i data-lucide="upload-cloud" class="w-10 h-10 text-sky-500 mx-auto mb-2"></i>
-                <p class="text-sm font-semibold text-slate-700">Arrastrá tu archivo aquí</p>
+                <p class="text-sm font-semibold text-slate-700">Arrastrá tu archivo (PDF o Excel)</p>
                 <p class="text-xs text-slate-400 mt-1">o hacé clic para explorar</p>
                 <input type="file" id="file-input-0" class="hidden" accept=".xlsx,.xls,.csv,.txt,.pdf" onchange="window.app.handleFileSelect(0, this.files[0])">
               </div>
             </div>
             <div id="file-info-0" class="mt-4 hidden text-xs bg-sky-50 border border-sky-100 p-3 rounded-lg">
               <div class="flex items-center justify-between font-bold text-sky-900">
-                <span class="truncate max-w-[170px]" id="file-name-0">archivo.xlsx</span>
+                <span class="truncate max-w-[170px]" id="file-name-0">archivo.pdf</span>
                 <button onclick="window.app.removeFile(0)" class="text-rose-500 hover:text-rose-700"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
               </div>
               <p class="text-slate-600 mt-1" id="file-rows-0">0 filas leídas</p>
@@ -140,30 +140,30 @@
           <div class="border-2 border-dashed border-slate-300 hover:border-sky-500 transition rounded-xl p-5 bg-slate-50/50 flex flex-col justify-between file-card" id="file-card-1">
             <div>
               <div class="flex items-center justify-between mb-3">
-                <input type="text" id="prov-name-1" value="Proveedor 2" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-36 outline-none">
-                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-700">Lista B</span>
+                <input type="text" id="prov-name-1" value="Lista 2 (Ej: 29/08)" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-44 outline-none">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-sky-100 text-sky-800">Lista B</span>
               </div>
               <div class="drop-zone py-8 px-4 text-center cursor-pointer border rounded-lg bg-white hover:bg-sky-50/40 border-slate-200 transition" onclick="document.getElementById('file-input-1').click()">
                 <i data-lucide="upload-cloud" class="w-10 h-10 text-sky-500 mx-auto mb-2"></i>
-                <p class="text-sm font-semibold text-slate-700">Arrastrá tu archivo aquí</p>
+                <p class="text-sm font-semibold text-slate-700">Arrastrá tu archivo (PDF o Excel)</p>
                 <p class="text-xs text-slate-400 mt-1">o hacé clic para explorar</p>
                 <input type="file" id="file-input-1" class="hidden" accept=".xlsx,.xls,.csv,.txt,.pdf" onchange="window.app.handleFileSelect(1, this.files[0])">
               </div>
             </div>
             <div id="file-info-1" class="mt-4 hidden text-xs bg-sky-50 border border-sky-100 p-3 rounded-lg">
               <div class="flex items-center justify-between font-bold text-sky-900">
-                <span class="truncate max-w-[170px]" id="file-name-1">archivo.xlsx</span>
+                <span class="truncate max-w-[170px]" id="file-name-1">archivo.pdf</span>
                 <button onclick="window.app.removeFile(1)" class="text-rose-500 hover:text-rose-700"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
               </div>
               <p class="text-slate-600 mt-1" id="file-rows-1">0 filas leídas</p>
             </div>
           </div>
 
-          <!-- Lista 3 -->
-          <div class="border-2 border-dashed border-slate-300 hover:border-sky-500 transition rounded-xl p-5 bg-slate-50/50 flex flex-col justify-between file-card" id="file-card-2">
+          <!-- Lista 3 (Opcional) -->
+          <div class="border-2 border-dashed border-slate-300 hover:border-sky-500 transition rounded-xl p-5 bg-slate-50/50 flex flex-col justify-between file-card hidden" id="file-card-2">
             <div>
               <div class="flex items-center justify-between mb-3">
-                <input type="text" id="prov-name-2" value="Proveedor 3" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-36 outline-none">
+                <input type="text" id="prov-name-2" value="Lista 3 (Opcional)" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-500 focus:bg-white px-1 py-0.5 rounded text-sm w-44 outline-none">
                 <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-700">Lista C (Opcional)</span>
               </div>
               <div class="drop-zone py-8 px-4 text-center cursor-pointer border rounded-lg bg-white hover:bg-sky-50/40 border-slate-200 transition" onclick="document.getElementById('file-input-2').click()">
@@ -184,14 +184,21 @@
 
         </div>
 
+        <!-- Botón para Sumar 3ª Lista Opcional -->
+        <div class="mt-4" id="container-btn-add-list">
+          <button type="button" onclick="window.app.toggleThirdList()" id="btn-toggle-third-list" class="text-xs text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200 font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-sky-600"></i> Agregar una 3ª lista de precios (opcional)
+          </button>
+        </div>
+
         <!-- Botón Principal de Comparación -->
         <div class="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-6">
           <button type="button" onclick="document.getElementById('advanced-settings-drawer').classList.toggle('hidden'); lucide.createIcons();" class="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1.5 font-medium transition">
             <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Ajustes Avanzados de Columnas e IVA (Opcional)
           </button>
 
-          <button id="btn-goto-step-2" onclick="window.app.processComparison()" disabled class="w-full sm:w-auto bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-8 py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2.5 transition text-base">
-            <i data-lucide="sparkles" class="w-5 h-5 text-amber-300"></i> Comparar Precios y Ver Resultados ➔
+          <button id="btn-goto-step-2" onclick="window.app.processComparison()" disabled class="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-8 py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2.5 transition text-base">
+            <i data-lucide="sparkles" class="w-5 h-5 text-amber-300"></i> Comparar Precios Producto por Producto ➔
           </button>
         </div>
 
@@ -215,7 +222,7 @@
     </section>
 
     <!-- ========================================== -->
-    <!-- PASO 2 (RESULTADOS, DASHBOARD Y TABLA)     -->
+    <!-- PASO 2 (COMPARACIÓN DETALLADA Y TOTALES)   -->
     <!-- ========================================== -->
     <section id="section-step-5" class="step-section hidden space-y-6">
       
@@ -243,108 +250,29 @@
         <div id="doubtful-list-container" class="space-y-3"></div>
       </div>
 
-      <!-- Panel Superior de Métricas y Totales (Dashboard KPI) -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="kpi-cards-container">
-        <!-- Tarjeta 1: Total Óptimo -->
-        <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 rounded-xl shadow-sm">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-emerald-100">Canasta Óptima</span>
-            <i data-lucide="badge-dollar-sign" class="w-5 h-5 text-emerald-200"></i>
-          </div>
-          <p class="text-2xl font-black mt-2" id="kpi-total-optimo">$0.00</p>
-          <p class="text-xs text-emerald-100 mt-1" id="kpi-total-optimo-sub">Comprando artículos comparables al más barato</p>
+      <!-- Barra Superior: Buscador y Selector de Vista -->
+      <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        
+        <!-- Buscador en tiempo real -->
+        <div class="relative flex-1 max-w-lg">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="table-search" placeholder="Buscar por producto (ej: Pro Plan, Kitten), marca o código..." class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-4 py-2 text-xs focus:border-sky-500 focus:bg-white focus:outline-none shadow-xs">
         </div>
 
-        <!-- Tarjeta 2: Ahorro Máximo -->
-        <div class="bg-gradient-to-br from-sky-600 to-blue-700 text-white p-5 rounded-xl shadow-sm">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-sky-100">Ahorro Máximo</span>
-            <i data-lucide="trending-down" class="w-5 h-5 text-sky-200"></i>
-          </div>
-          <p class="text-2xl font-black mt-2" id="kpi-max-ahorro">$0.00</p>
-          <p class="text-xs text-sky-100 mt-1" id="kpi-max-ahorro-pct">0.00% de ahorro potencial</p>
-        </div>
-
-        <!-- Tarjeta 3: Total Productos Procesados -->
-        <div class="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
-          <div class="flex items-center justify-between text-slate-500">
-            <span class="text-xs font-semibold uppercase tracking-wider">Productos Totales</span>
-            <i data-lucide="layers" class="w-5 h-5 text-slate-400"></i>
-          </div>
-          <p class="text-2xl font-black text-slate-800 mt-2" id="kpi-total-items">0</p>
-          <p class="text-xs text-slate-500 mt-1" id="kpi-items-detail">Artículos procesados</p>
-        </div>
-
-        <!-- Tarjeta 4: Resumen de Ganadores -->
-        <div class="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
-          <div class="flex items-center justify-between text-slate-500">
-            <span class="text-xs font-semibold uppercase tracking-wider">Líderes en Precio</span>
-            <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i>
-          </div>
-          <div class="mt-2 space-y-1 text-xs text-slate-700 font-medium" id="kpi-cheapest-leaders">
-            <!-- Dinámico -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Tarjeta de Recomendación Inteligente y Plan de Pedidos -->
-      <div class="bg-gradient-to-r from-amber-50 via-orange-50/40 to-amber-50 border border-amber-200 rounded-xl p-5 shadow-sm">
-        <div class="flex items-center gap-2 mb-3">
-          <span class="text-lg">💡</span>
-          <h3 class="font-bold text-slate-900 text-sm">Recomendación Inteligente de Compra (Explicado Simple)</h3>
-        </div>
-        <div id="text-executive-advice" class="text-xs text-slate-700 space-y-2">
-          <!-- Generado dinámicamente -->
-        </div>
-      </div>
-
-      <!-- Resumen Financiero por Proveedor -->
-      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
-        <div class="flex items-center justify-between">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-            <i data-lucide="bar-chart-3" class="w-4 h-4 text-sky-600"></i> Resumen Financiero Comparativo
-          </h3>
-          <span class="text-xs text-slate-500" id="txt-diferencia-total-listas">Diferencia total monetaria entre listas: $0.00</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left">
-            <thead class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
-              <tr>
-                <th class="py-2.5 px-3">Proveedor / Escenario</th>
-                <th class="py-2.5 px-3 text-right">Total Comparables</th>
-                <th class="py-2.5 px-3 text-right">Total General</th>
-                <th class="py-2.5 px-3 text-right text-emerald-700">Ahorro Posible ($)</th>
-                <th class="py-2.5 px-3 text-right text-emerald-700">Ahorro (%)</th>
-                <th class="py-2.5 px-3 text-center">Prod. Más Baratos</th>
-                <th class="py-2.5 px-3 text-center">Exclusivos</th>
-                <th class="py-2.5 px-3 text-center">Pedido Listo</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-summary-providers" class="divide-y divide-slate-100">
-              <!-- Filas dinámicas -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Selector de Modo de Visualización -->
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-bold text-slate-700">Ver Comparación:</span>
+        <div class="flex items-center gap-2.5">
+          <!-- Selector de Modo de Visualización -->
           <div class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 text-xs">
             <button id="btn-view-brands" onclick="window.app.switchView('brands')" class="px-3 py-1.5 rounded-md font-bold text-sky-800 bg-white shadow-xs transition flex items-center gap-1.5">
-              <i data-lucide="tag" class="w-3.5 h-3.5"></i> Vista por Marcas (Resumen Rápido)
+              <i data-lucide="tag" class="w-3.5 h-3.5"></i> Comparación por Marcas
             </button>
             <button id="btn-view-table" onclick="window.app.switchView('table')" class="px-3 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
-              <i data-lucide="table" class="w-3.5 h-3.5"></i> Tabla Detallada
+              <i data-lucide="table" class="w-3.5 h-3.5"></i> Tabla Completa
             </button>
           </div>
-        </div>
 
-        <div class="flex items-center gap-2">
+          <!-- Botones de Exportación -->
           <button onclick="window.app.exportFile('excel')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-xs transition">
-            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar a Excel
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel
           </button>
           <button onclick="window.app.exportFile('pdf')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-xs transition">
             <i data-lucide="file-text" class="w-4 h-4"></i> PDF
@@ -352,7 +280,7 @@
         </div>
       </div>
 
-      <!-- VISTA 1: AGRUPADA POR MARCAS (Estilo directo sin límite de caracteres) -->
+      <!-- VISTA 1: AGRUPADA POR MARCAS (Comparación Directa Producto por Producto) -->
       <div id="container-view-brands" class="space-y-4">
         <!-- Tarjetas por marca renderizadas por app.js -->
       </div>
@@ -360,24 +288,15 @@
       <!-- VISTA 2: TABLA COMPARATIVA DETALLADA -->
       <div id="container-view-table" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         
-        <!-- Barra de Herramientas de la Tabla -->
-        <div class="p-4 border-b border-slate-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-50/50">
-          
-          <!-- Buscador en tiempo real -->
-          <div class="relative flex-1 max-w-md">
-            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-            <input type="text" id="table-search" placeholder="Buscar por producto, marca, código EAN o presentación..." class="w-full bg-white border border-slate-300 rounded-lg pl-9 pr-4 py-2 text-xs focus:border-sky-500 focus:outline-none shadow-xs">
-          </div>
-
-          <!-- Filtros Rápidos -->
-          <div class="flex items-center gap-2 overflow-x-auto">
-            <button onclick="window.app.setTableFilter('todos')" class="tbl-filter-btn active text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 text-white shadow-xs">Todos</button>
-            <button onclick="window.app.setTableFilter('mas_barato_l1')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50" id="filter-btn-l1">Más Barato L1</button>
-            <button onclick="window.app.setTableFilter('mas_barato_l2')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50" id="filter-btn-l2">Más Barato L2</button>
-            <button onclick="window.app.setTableFilter('mas_barato_l3')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50" id="filter-btn-l3">Más Barato L3</button>
-            <button onclick="window.app.setTableFilter('exclusivos')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50">Exclusivos</button>
-            <button onclick="window.app.setTableFilter('dudosos')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50">Dudosos</button>
-          </div>
+        <!-- Filtros Rápidos -->
+        <div class="p-3.5 border-b border-slate-200 flex items-center gap-2 overflow-x-auto bg-slate-50/50">
+          <span class="text-xs font-bold text-slate-500 mr-1">Filtrar:</span>
+          <button onclick="window.app.setTableFilter('todos')" class="tbl-filter-btn active text-xs font-semibold px-3 py-1 rounded-lg bg-slate-800 text-white shadow-xs">Todos</button>
+          <button onclick="window.app.setTableFilter('mas_barato_l1')" class="tbl-filter-btn text-xs font-semibold px-3 py-1 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50" id="filter-btn-l1">Más Barato L1</button>
+          <button onclick="window.app.setTableFilter('mas_barato_l2')" class="tbl-filter-btn text-xs font-semibold px-3 py-1 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50" id="filter-btn-l2">Más Barato L2</button>
+          <button onclick="window.app.setTableFilter('mas_barato_l3')" class="tbl-filter-btn text-xs font-semibold px-3 py-1 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50" id="filter-btn-l3">Más Barato L3</button>
+          <button onclick="window.app.setTableFilter('exclusivos')" class="tbl-filter-btn text-xs font-semibold px-3 py-1 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50">Exclusivos</button>
+          <button onclick="window.app.setTableFilter('dudosos')" class="tbl-filter-btn text-xs font-semibold px-3 py-1 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50">Dudosos</button>
         </div>
 
         <!-- Tabla de Datos -->
@@ -386,13 +305,13 @@
             <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
               <tr>
                 <th class="py-3 px-3 w-10 text-center">#</th>
-                <th class="py-3 px-3 min-w-[200px]">Producto Normalizado</th>
+                <th class="py-3 px-3 min-w-[200px]">Producto</th>
                 <th class="py-3 px-2 w-28">Código</th>
                 <th class="py-3 px-2 w-24">Marca</th>
                 <th class="py-3 px-2 w-20">Pres.</th>
-                <th class="py-3 px-3 text-right" id="th-prov-0">Proveedor 1</th>
-                <th class="py-3 px-3 text-right" id="th-prov-1">Proveedor 2</th>
-                <th class="py-3 px-3 text-right" id="th-prov-2">Proveedor 3</th>
+                <th class="py-3 px-3 text-right" id="th-prov-0">Lista 1</th>
+                <th class="py-3 px-3 text-right" id="th-prov-1">Lista 2</th>
+                <th class="py-3 px-3 text-right" id="th-prov-2">Lista 3</th>
                 <th class="py-3 px-3 text-center bg-emerald-50/80 text-emerald-950 font-black">Más Barato</th>
                 <th class="py-3 px-3 text-right text-rose-700 font-bold">Diferencia $</th>
                 <th class="py-3 px-3 text-right text-rose-700 font-bold">Diferencia %</th>
@@ -412,6 +331,89 @@
             <button onclick="window.app.prevPage()" id="btn-prev-page" class="px-2.5 py-1 rounded bg-white border border-slate-300 disabled:opacity-40"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
             <span id="txt-current-page" class="font-bold px-2">1 / 1</span>
             <button onclick="window.app.nextPage()" id="btn-next-page" class="px-2.5 py-1 rounded bg-white border border-slate-300 disabled:opacity-40"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ========================================== -->
+      <!-- RESUMEN FINAL: TOTALES Y AHORRO GLOBAL     -->
+      <!-- ========================================== -->
+      <div class="mt-10 pt-8 border-t-2 border-slate-200 space-y-6">
+        
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📊</span>
+          <h3 class="text-base font-extrabold text-slate-900 tracking-tight">Totales de Compra y Ahorro Global Posible</h3>
+        </div>
+
+        <!-- Tarjetas KPI de Totales -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="kpi-cards-container">
+          <!-- Tarjeta 1: Canasta Óptima -->
+          <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 rounded-xl shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-emerald-100">Canasta Óptima (Mejor Precio)</span>
+              <i data-lucide="badge-dollar-sign" class="w-5 h-5 text-emerald-200"></i>
+            </div>
+            <p class="text-2xl font-black mt-2" id="kpi-total-optimo">$0.00</p>
+            <p class="text-xs text-emerald-100 mt-1" id="kpi-total-optimo-sub">Comprando cada producto a quien lo tenga más barato</p>
+          </div>
+
+          <!-- Tarjeta 2: Ahorro Máximo -->
+          <div class="bg-gradient-to-br from-sky-600 to-blue-700 text-white p-5 rounded-xl shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-sky-100">Ahorro Máximo Posible</span>
+              <i data-lucide="trending-down" class="w-5 h-5 text-sky-200"></i>
+            </div>
+            <p class="text-2xl font-black mt-2" id="kpi-max-ahorro">$0.00</p>
+            <p class="text-xs text-sky-100 mt-1" id="kpi-max-ahorro-pct">0.00% de ahorro potencial</p>
+          </div>
+
+          <!-- Tarjeta 3: Total Productos Procesados -->
+          <div class="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
+            <div class="flex items-center justify-between text-slate-500">
+              <span class="text-xs font-semibold uppercase tracking-wider">Productos Analizados</span>
+              <i data-lucide="layers" class="w-5 h-5 text-slate-400"></i>
+            </div>
+            <p class="text-2xl font-black text-slate-800 mt-2" id="kpi-total-items">0</p>
+            <p class="text-xs text-slate-500 mt-1" id="kpi-items-detail">100% de productos sin omisiones</p>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Recomendación y Plan de Pedidos -->
+        <div class="bg-gradient-to-r from-amber-50 via-orange-50/40 to-amber-50 border border-amber-200 rounded-xl p-5 shadow-sm">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">💡</span>
+            <h3 class="font-bold text-slate-900 text-sm">Resumen Ejecutivo y Pedidos Listos</h3>
+          </div>
+          <div id="text-executive-advice" class="text-xs text-slate-700 space-y-2">
+            <!-- Generado dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Tabla Financiera Comparativa de Totales -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Comparativa de Totales por Lista</h4>
+            <span class="text-xs text-slate-500" id="txt-diferencia-total-listas">Diferencia total: $0.00</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="py-2.5 px-3">Lista / Escenario</th>
+                  <th class="py-2.5 px-3 text-right">Total General</th>
+                  <th class="py-2.5 px-3 text-right text-emerald-700">Ahorro Posible ($)</th>
+                  <th class="py-2.5 px-3 text-right text-emerald-700">Ahorro (%)</th>
+                  <th class="py-2.5 px-3 text-center">Prod. Más Baratos</th>
+                  <th class="py-2.5 px-3 text-center">Exclusivos</th>
+                  <th class="py-2.5 px-3 text-center">Descargar Pedido</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-summary-providers" class="divide-y divide-slate-100">
+                <!-- Filas dinámicas -->
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -462,7 +464,7 @@
   <!-- Footer -->
   <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
     <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
-      Comparador Profesional de Listas de Precios &copy; 2026. Procesamiento 100% en la nube.
+      Comparador de Listas de Precios &copy; 2026. Procesa 100% de productos en PDF y Excel.
     </div>
   </footer>
 

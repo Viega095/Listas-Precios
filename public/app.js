@@ -189,9 +189,9 @@ class PriceComparatorApp {
       document.getElementById(`file-rows-${listIdx}`).innerText = `${data.total_rows.toLocaleString()} filas leídas`;
       document.getElementById(`file-card-${listIdx}`).classList.add('has-file');
 
-      // Validar si al menos 1 lista está cargada
+      // Validar si al menos 2 listas están cargadas
       const uploadedCount = Object.keys(this.uploadedFiles).length;
-      document.getElementById('btn-goto-step-2').disabled = uploadedCount === 0;
+      document.getElementById('btn-goto-step-2').disabled = uploadedCount < 2;
 
       this.showAlert('success', `Lista "${data.filename}" cargada correctamente con ${data.total_rows.toLocaleString()} productos.`);
 
@@ -203,12 +203,33 @@ class PriceComparatorApp {
     }
   }
 
+  toggleThirdList() {
+    const card2 = document.getElementById('file-card-2');
+    const btn = document.getElementById('btn-toggle-third-list');
+    if (!card2) return;
+    if (card2.classList.contains('hidden')) {
+      card2.classList.remove('hidden');
+      if (btn) btn.innerHTML = `<i data-lucide="minus-circle" class="w-4 h-4 text-slate-500"></i> Ocultar 3ª lista`;
+    } else {
+      if (this.uploadedFiles[2]) {
+        this.removeFile(2);
+      }
+      card2.classList.add('hidden');
+      if (btn) btn.innerHTML = `<i data-lucide="plus-circle" class="w-4 h-4 text-sky-600"></i> Agregar una 3ª lista de precios (opcional)`;
+    }
+    lucide.createIcons();
+  }
+
   async loadDemoData() {
-    this.showLoading("Cargando 3 catálogos de prueba...", "Cargando productos con precios y códigos de ejemplo");
+    this.showLoading("Cargando catálogos de prueba...", "Cargando productos con precios y códigos de ejemplo");
     try {
       const res = await fetch('/api/load_demo');
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Error al cargar datos de prueba');
+
+      document.getElementById('file-card-2')?.classList.remove('hidden');
+      const btn = document.getElementById('btn-toggle-third-list');
+      if (btn) btn.innerHTML = `<i data-lucide="minus-circle" class="w-4 h-4 text-slate-500"></i> Ocultar 3ª lista`;
 
       data.files.forEach(f => {
         const idx = f.list_idx;
@@ -226,7 +247,7 @@ class PriceComparatorApp {
       });
 
       document.getElementById('btn-goto-step-2').disabled = false;
-      this.showAlert('success', '¡3 listas de prueba cargadas con éxito! Ya podés continuar al siguiente paso.');
+      this.showAlert('success', '¡Listas de prueba cargadas con éxito! Ya podés comparar los precios.');
     } catch (err) {
       this.showAlert('error', err.message);
     } finally {
@@ -246,7 +267,7 @@ class PriceComparatorApp {
       document.getElementById(`file-input-${listIdx}`).value = '';
 
       const uploadedCount = Object.keys(this.uploadedFiles).length;
-      document.getElementById('btn-goto-step-2').disabled = uploadedCount === 0;
+      document.getElementById('btn-goto-step-2').disabled = uploadedCount < 2;
     } catch (err) {
       console.error(err);
     }
@@ -884,13 +905,24 @@ class PriceComparatorApp {
       let itemsHtml = '';
       items.forEach(it => {
         let diffBadge = '';
-        if (it.diferencia_dinero > 0) {
-          const sign = (it.precio_l2 && it.precio_l1 && it.precio_l2 > it.precio_l1) ? '+' : '';
-          diffBadge = `<span class="bg-rose-50 text-rose-700 font-bold px-2 py-0.5 rounded text-[11px] border border-rose-200">${sign}$${it.diferencia_dinero.toLocaleString('es-AR', {minimumFractionDigits: 2})} (${it.diferencia_porcentaje}%)</span>`;
+        const uploadedCount = Object.keys(this.uploadedFiles).length;
+        
+        if (uploadedCount === 2 && it.precio_l1 !== null && it.precio_l2 !== null) {
+          const diff = it.precio_l2 - it.precio_l1;
+          const pct = it.precio_l1 > 0 ? (diff / it.precio_l1) * 100 : 0;
+          if (diff > 0.01) {
+            diffBadge = `<span class="bg-rose-50 text-rose-700 font-bold px-2.5 py-1 rounded-lg text-xs border border-rose-200 flex items-center gap-1">🔺 Subió +$${diff.toLocaleString('es-AR', {minimumFractionDigits: 2})} (+${pct.toFixed(1)}%)</span>`;
+          } else if (diff < -0.01) {
+            diffBadge = `<span class="bg-emerald-50 text-emerald-700 font-bold px-2.5 py-1 rounded-lg text-xs border border-emerald-200 flex items-center gap-1">🔻 Bajó -$${Math.abs(diff).toLocaleString('es-AR', {minimumFractionDigits: 2})} (${pct.toFixed(1)}%)</span>`;
+          } else {
+            diffBadge = `<span class="bg-slate-100 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-xs border border-slate-200">🟢 Mismo precio</span>`;
+          }
+        } else if (it.diferencia_dinero > 0) {
+          diffBadge = `<span class="bg-sky-50 text-sky-800 font-bold px-2.5 py-1 rounded-lg text-xs border border-sky-200">Diferencia: $${it.diferencia_dinero.toLocaleString('es-AR', {minimumFractionDigits: 2})} (${it.diferencia_porcentaje.toFixed(1)}%)</span>`;
         } else if (it.estado_precio === 'Precio igual') {
-          diffBadge = `<span class="bg-slate-100 text-slate-600 font-medium px-2 py-0.5 rounded text-[11px]">Mismo precio</span>`;
+          diffBadge = `<span class="bg-slate-100 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-xs border border-slate-200">🟢 Mismo precio</span>`;
         } else {
-          diffBadge = `<span class="bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded text-[11px]">${it.proveedor_mas_barato}</span>`;
+          diffBadge = `<span class="bg-emerald-50 text-emerald-700 font-bold px-2.5 py-1 rounded-lg text-xs border border-emerald-200">${it.proveedor_mas_barato}</span>`;
         }
 
         let provPricesHtml = '';
