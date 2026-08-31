@@ -59,6 +59,12 @@ class PriceComparatorApp {
     // Filtros de búsqueda
     const filterSearch = document.getElementById('filter-search');
     const tableSearch = document.getElementById('table-search');
+    const filterStatus = document.getElementById('filter-status');
+    const filterDiffRange = document.getElementById('filter-diff-range');
+    const filterProvider = document.getElementById('filter-provider');
+    const filterSort = document.getElementById('filter-sort');
+    const selectPageSize = document.getElementById('select-page-size');
+
     if (filterSearch) filterSearch.addEventListener('input', () => this.applyFiltersAndRender());
     if (tableSearch) tableSearch.addEventListener('input', () => this.applyFiltersAndRender());
     if (filterStatus) filterStatus.addEventListener('change', () => this.applyFiltersAndRender());
