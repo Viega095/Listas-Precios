@@ -923,11 +923,12 @@ class PriceComparatorApp {
     sortedBrands.forEach(brand => {
       const items = brandMap[brand];
       const card = document.createElement('div');
-      card.className = "bg-white rounded-xl border border-slate-300/80 shadow-xs overflow-hidden";
+      card.className = "bg-white rounded-xl border border-slate-300 shadow-sm overflow-hidden";
       
       let itemsHtml = '';
       items.forEach((it, itemIdx) => {
-        const bgClass = (itemIdx % 2 === 0) ? 'bg-white' : 'bg-slate-50/80';
+        // Gris más visible y contrastado pero agradable
+        const bgClass = (itemIdx % 2 === 0) ? 'bg-white' : 'bg-slate-100/90';
 
         let diffBadge = '';
         const uploadedCount = Object.keys(this.uploadedFiles).length;
@@ -936,18 +937,18 @@ class PriceComparatorApp {
           const diff = it.precio_l2 - it.precio_l1;
           const pct = it.precio_l1 > 0 ? (diff / it.precio_l1) * 100 : 0;
           if (diff > 0.01) {
-            diffBadge = `<span class="bg-rose-50 text-rose-800 font-extrabold px-3 py-1.5 rounded-lg text-xs border border-rose-200 flex items-center justify-center gap-1 shadow-2xs">🔺 Subió +$${diff.toLocaleString('es-AR', {minimumFractionDigits: 2})} (+${pct.toFixed(1)}%)</span>`;
+            diffBadge = `<span class="bg-rose-100 text-rose-900 font-extrabold px-3 py-1.5 rounded-lg text-xs border border-rose-300 flex items-center justify-center gap-1 shadow-2xs">🔺 Subió +$${diff.toLocaleString('es-AR', {minimumFractionDigits: 2})} (+${pct.toFixed(1)}%)</span>`;
           } else if (diff < -0.01) {
-            diffBadge = `<span class="bg-emerald-50 text-emerald-800 font-extrabold px-3 py-1.5 rounded-lg text-xs border border-emerald-200 flex items-center justify-center gap-1 shadow-2xs">🔻 Bajó -$${Math.abs(diff).toLocaleString('es-AR', {minimumFractionDigits: 2})} (${pct.toFixed(1)}%)</span>`;
+            diffBadge = `<span class="bg-emerald-100 text-emerald-900 font-extrabold px-3 py-1.5 rounded-lg text-xs border border-emerald-300 flex items-center justify-center gap-1 shadow-2xs">🔻 Bajó -$${Math.abs(diff).toLocaleString('es-AR', {minimumFractionDigits: 2})} (${pct.toFixed(1)}%)</span>`;
           } else {
-            diffBadge = `<span class="bg-slate-100 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-200 flex items-center justify-center gap-1">🟢 Mismo precio</span>`;
+            diffBadge = `<span class="bg-slate-200 text-slate-800 font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-300 flex items-center justify-center gap-1">🟢 Mismo precio</span>`;
           }
         } else if (it.diferencia_dinero > 0) {
-          diffBadge = `<span class="bg-sky-50 text-sky-900 font-bold px-3 py-1.5 rounded-lg text-xs border border-sky-200 flex items-center justify-center gap-1">Diferencia: $${it.diferencia_dinero.toLocaleString('es-AR', {minimumFractionDigits: 2})} (${it.diferencia_porcentaje.toFixed(1)}%)</span>`;
+          diffBadge = `<span class="bg-sky-100 text-sky-950 font-bold px-3 py-1.5 rounded-lg text-xs border border-sky-300 flex items-center justify-center gap-1">Diferencia: $${it.diferencia_dinero.toLocaleString('es-AR', {minimumFractionDigits: 2})} (${it.diferencia_porcentaje.toFixed(1)}%)</span>`;
         } else if (it.estado_precio === 'Precio igual') {
-          diffBadge = `<span class="bg-slate-100 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-200 flex items-center justify-center gap-1">🟢 Mismo precio</span>`;
+          diffBadge = `<span class="bg-slate-200 text-slate-800 font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-300 flex items-center justify-center gap-1">🟢 Mismo precio</span>`;
         } else {
-          diffBadge = `<span class="bg-emerald-50 text-emerald-800 font-bold px-3 py-1.5 rounded-lg text-xs border border-emerald-200 flex items-center justify-center gap-1">${it.proveedor_mas_barato}</span>`;
+          diffBadge = `<span class="bg-emerald-100 text-emerald-900 font-bold px-3 py-1.5 rounded-lg text-xs border border-emerald-300 flex items-center justify-center gap-1">${it.proveedor_mas_barato}</span>`;
         }
 
         let provPricesHtml = '';
@@ -957,45 +958,45 @@ class PriceComparatorApp {
             const pName = this.configs[idx].nombre;
             const isBest = (it.proveedor_mas_barato_idx === idx);
             provPricesHtml += `
-              <div class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border ${
+              <div class="flex items-center gap-1.5 text-xs px-3 py-1 rounded-lg border ${
                 isBest && it.present_count > 1 
-                  ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-black ring-1 ring-emerald-400/40' 
-                  : 'bg-white/80 border-slate-200 text-slate-700 font-medium'
+                  ? 'bg-emerald-50 border-emerald-400 text-emerald-950 font-black ring-1 ring-emerald-500/40' 
+                  : 'bg-white border-slate-300 text-slate-800 font-semibold'
               }">
-                <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">${pName}:</span>
-                <span class="font-bold">${pVal ? '$' + pVal.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '<i class="text-slate-400 font-normal">No presente</i>'}</span>
-                ${isBest && it.present_count > 1 ? '<span class="text-[9px] bg-emerald-600 text-white px-1 py-0.2 rounded font-black ml-0.5">LÍDER</span>' : ''}
+                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">${pName}:</span>
+                <span class="font-extrabold text-slate-900">${pVal ? '$' + pVal.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '<i class="text-slate-400 font-normal">No presente</i>'}</span>
+                ${isBest && it.present_count > 1 ? '<span class="text-[9px] bg-emerald-700 text-white px-1.5 py-0.2 rounded font-black ml-0.5">LÍDER</span>' : ''}
               </div>
             `;
           }
         });
 
         itemsHtml += `
-          <div class="px-4 py-3.5 ${bgClass} hover:bg-sky-50/60 transition-colors border-b border-slate-200/80 last:border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="px-4 py-3.5 ${bgClass} hover:bg-sky-50 transition-colors border-b border-slate-300 last:border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div class="space-y-1">
-              <div class="font-extrabold text-slate-900 text-sm tracking-tight">${it.producto}</div>
+              <div class="font-black text-slate-950 text-sm tracking-tight">${it.producto}</div>
               <div class="flex flex-wrap items-center gap-2 text-[11px]">
-                ${it.codigo ? `<span class="bg-slate-100 border border-slate-200 text-slate-600 font-mono px-1.5 py-0.5 rounded">Cód: ${it.codigo}</span>` : ''}
-                ${it.presentacion ? `<span class="bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded">Pres: ${it.presentacion}</span>` : ''}
-                ${it.es_dudoso ? `<span class="bg-amber-100 border border-amber-300 text-amber-900 font-bold px-1.5 py-0.5 rounded">⚠️ Similar</span>` : ''}
+                ${it.codigo ? `<span class="bg-white border border-slate-300 text-slate-700 font-mono px-2 py-0.5 rounded shadow-2xs font-semibold">Cód: ${it.codigo}</span>` : ''}
+                ${it.presentacion ? `<span class="bg-white border border-slate-300 text-slate-700 px-2 py-0.5 rounded shadow-2xs font-semibold">Pres: ${it.presentacion}</span>` : ''}
+                ${it.es_dudoso ? `<span class="bg-amber-100 border border-amber-400 text-amber-950 font-bold px-2 py-0.5 rounded">⚠️ Similar</span>` : ''}
               </div>
             </div>
             <div class="flex flex-wrap items-center gap-3 md:gap-5 shrink-0">
               <div class="flex flex-wrap items-center gap-2">
                 ${provPricesHtml}
               </div>
-              <div class="min-w-[170px]">${diffBadge}</div>
+              <div class="min-w-[175px]">${diffBadge}</div>
             </div>
           </div>
         `;
       });
 
       card.innerHTML = `
-        <div class="bg-slate-100/80 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+        <div class="bg-slate-200/90 px-4 py-3 border-b border-slate-300 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="text-base">🏷️</span>
-            <h4 class="font-extrabold text-slate-900 text-sm tracking-tight">${brand}</h4>
-            <span class="bg-slate-200/80 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-300/60">${items.length} productos</span>
+            <h4 class="font-black text-slate-950 text-sm tracking-tight">${brand}</h4>
+            <span class="bg-slate-300 text-slate-900 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-slate-400/80">${items.length} productos</span>
           </div>
         </div>
         <div>
@@ -1014,18 +1015,32 @@ class PriceComparatorApp {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    const total = this.filteredRows.length;
+    const total = this.filteredRows ? this.filteredRows.length : 0;
+    const startIdx = (this.currentPage - 1) * this.pageSize;
+    const endIdx = Math.min(startIdx + this.pageSize, total);
+    const pageRows = (this.filteredRows || []).slice(startIdx, endIdx);
+    const maxPages = Math.ceil(total / this.pageSize) || 1;
+
     const countInfo = document.getElementById('txt-pagination-info');
-    if (countInfo) countInfo.innerText = `Mostrando ${total.toLocaleString()} productos`;
+    if (countInfo) {
+      countInfo.innerText = `Mostrando ${total > 0 ? startIdx + 1 : 0} a ${endIdx} de ${total.toLocaleString()} productos`;
+    }
+    const pageInfo = document.getElementById('txt-current-page');
+    if (pageInfo) {
+      pageInfo.innerText = `${this.currentPage} / ${maxPages}`;
+    }
+    const btnPrev = document.getElementById('btn-prev-page');
+    const btnNext = document.getElementById('btn-next-page');
+    if (btnPrev) btnPrev.disabled = this.currentPage <= 1;
+    if (btnNext) btnNext.disabled = this.currentPage >= maxPages;
 
     pageRows.forEach((r, i) => {
       const globalRowIdx = startIdx + i;
       const rowNum = globalRowIdx + 1;
-      const minP = r.precio_min;
-      
       const isEven = (i % 2 === 0);
-      const rowClass = isEven ? 'row-even' : 'row-odd';
+      const rowClass = isEven ? 'bg-white' : 'bg-slate-100/90';
 
+      const minP = r.precio_min;
       const p1Str = r.precio_l1 !== null ? `$${r.precio_l1.toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '<span class="text-slate-400 italic">No disponible</span>';
       const p2Str = r.precio_l2 !== null ? `$${r.precio_l2.toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '<span class="text-slate-400 italic">No disponible</span>';
       const p3Str = r.precio_l3 !== null ? `$${r.precio_l3.toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '<span class="text-slate-400 italic">No disponible</span>';
@@ -1034,34 +1049,31 @@ class PriceComparatorApp {
       const isP2Best = (r.precio_l2 !== null && minP !== null && Math.abs(r.precio_l2 - minP) < 0.001 && (r.precio_l1 !== null || r.precio_l3 !== null));
       const isP3Best = (r.precio_l3 !== null && minP !== null && Math.abs(r.precio_l3 - minP) < 0.001 && (r.precio_l1 !== null || r.precio_l2 !== null));
 
-      // Badge de porcentaje con tonalidad de alerta
-      let pctBadgeClass = 'bg-slate-100 text-slate-600';
+      let pctBadgeClass = 'bg-slate-100 text-slate-700 border border-slate-300';
       if (r.diferencia_porcentaje > 35) {
-        pctBadgeClass = 'bg-rose-100 text-rose-800 font-bold border border-rose-200';
+        pctBadgeClass = 'bg-rose-100 text-rose-900 font-black border border-rose-300';
       } else if (r.diferencia_porcentaje > 15) {
-        pctBadgeClass = 'bg-amber-100 text-amber-800 font-semibold border border-amber-200';
+        pctBadgeClass = 'bg-amber-100 text-amber-900 font-bold border border-amber-300';
       } else if (r.diferencia_porcentaje > 0) {
-        pctBadgeClass = 'bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200';
+        pctBadgeClass = 'bg-emerald-100 text-emerald-900 font-bold border border-emerald-300';
       }
 
       const tr = document.createElement('tr');
-      tr.className = `row-comparison ${rowClass}`;
+      tr.className = `${rowClass} hover:bg-sky-50 border-b border-slate-300 transition-colors cursor-pointer`;
       tr.title = "Hacé clic para ver el desglose completo del producto";
       tr.onclick = () => this.openProductModal(globalRowIdx);
 
       tr.innerHTML = `
-        <td class="py-3 px-3 text-center sticky-col-1 border-r border-slate-200 font-mono text-[11px] font-semibold text-slate-500">
+        <td class="py-3 px-3 text-center font-mono text-[11px] font-bold text-slate-500 border-r border-slate-200">
           ${rowNum}
         </td>
-        <td class="py-3 px-3 sticky-col-2 border-r border-slate-200 font-bold text-slate-900 truncate max-w-[260px]">
+        <td class="py-3 px-3 font-bold text-slate-900 truncate max-w-[260px] border-r border-slate-200">
           ${r.producto}
         </td>
-        <td class="py-3 px-3 text-slate-600 font-mono text-[11px]">${r.codigo || '-'}</td>
-        <td class="py-3 px-3 text-slate-700 font-medium">${r.marca || '-'}</td>
-        <td class="py-3 px-3 text-slate-600">${r.presentacion || '-'}</td>
-        <td class="py-3 px-3 text-center font-semibold text-slate-700">${r.cantidad}</td>
+        <td class="py-3 px-2 text-slate-600 font-mono text-[11px]">${r.codigo || '-'}</td>
+        <td class="py-3 px-2 text-slate-700 font-medium">${r.marca || '-'}</td>
+        <td class="py-3 px-2 text-slate-600">${r.presentacion || '-'}</td>
         
-        <!-- Precios -->
         <td class="py-3 px-3 text-right font-medium ${isP1Best ? 'bg-emerald-100 text-emerald-950 font-black' : 'text-slate-800'}">
           ${isP1Best ? '<span class="text-emerald-700 font-black mr-1">✓</span>' : ''}${p1Str}
         </td>
@@ -1072,23 +1084,37 @@ class PriceComparatorApp {
           ${isP3Best ? '<span class="text-emerald-700 font-black mr-1">✓</span>' : ''}${p3Str}
         </td>
 
-        <td class="py-3 px-3 font-semibold text-slate-800 truncate max-w-[140px]">${r.proveedor_mas_barato}</td>
+        <td class="py-3 px-3 text-center font-bold text-emerald-950 bg-emerald-50 border-x border-slate-200 truncate max-w-[140px]">${r.proveedor_mas_barato}</td>
         <td class="py-3 px-3 text-right font-bold text-slate-900">$${r.diferencia_dinero.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
         <td class="py-3 px-3 text-right">
           <span class="px-2 py-0.5 rounded text-[11px] ${pctBadgeClass}" title="${r.explicacion_porcentaje}">
             ${r.diferencia_porcentaje.toFixed(2)}%
           </span>
         </td>
-        <td class="py-3 px-3 text-center">
-          <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${
-            r.present_count === 3 ? 'bg-sky-100 text-sky-800 border border-sky-200' :
-            r.present_count === 2 ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
-            'bg-slate-100 text-slate-700 border border-slate-200'
-          }">${r.estado_precio}</span>
+        <td class="py-3 px-2 text-center">
+          <button class="text-sky-600 hover:text-sky-800 p-1 rounded hover:bg-sky-100" title="Ver detalle"><i data-lucide="eye" class="w-4 h-4"></i></button>
         </td>
       `;
       tbody.appendChild(tr);
     });
+
+    lucide.createIcons();
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.renderTablePage();
+    }
+  }
+
+  nextPage() {
+    const total = this.filteredRows ? this.filteredRows.length : 0;
+    const maxPages = Math.ceil(total / this.pageSize) || 1;
+    if (this.currentPage < maxPages) {
+      this.currentPage++;
+      this.renderTablePage();
+    }
   }
 
   // ========================================================
