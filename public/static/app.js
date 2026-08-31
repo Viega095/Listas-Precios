@@ -16,6 +16,8 @@ class PriceComparatorApp {
     this.currentPage = 1;
     this.pageSize = 100;
     this.filteredRows = [];
+    this.currentViewMode = 'brands';
+    this.activeTableFilter = 'todos';
     
     this.init();
   }
@@ -56,13 +58,9 @@ class PriceComparatorApp {
 
     // Filtros de búsqueda
     const filterSearch = document.getElementById('filter-search');
-    const filterStatus = document.getElementById('filter-status');
-    const filterDiffRange = document.getElementById('filter-diff-range');
-    const filterProvider = document.getElementById('filter-provider');
-    const filterSort = document.getElementById('filter-sort');
-    const selectPageSize = document.getElementById('select-page-size');
-
+    const tableSearch = document.getElementById('table-search');
     if (filterSearch) filterSearch.addEventListener('input', () => this.applyFiltersAndRender());
+    if (tableSearch) tableSearch.addEventListener('input', () => this.applyFiltersAndRender());
     if (filterStatus) filterStatus.addEventListener('change', () => this.applyFiltersAndRender());
     if (filterDiffRange) filterDiffRange.addEventListener('change', () => this.applyFiltersAndRender());
     if (filterProvider) filterProvider.addEventListener('change', () => this.applyFiltersAndRender());
@@ -769,85 +767,194 @@ class PriceComparatorApp {
     document.getElementById('th-prov-1').innerText = `Precio ${this.configs[1].nombre}`;
     document.getElementById('th-prov-2').innerText = `Precio ${this.configs[2].nombre}`;
 
-    this.applyFiltersAndRender();
+    this.switchView(this.currentViewMode || 'brands');
     lucide.createIcons();
   }
 
   // ========================================================
-  // FILTRADO Y RENDERIZADO DE TABLA VIRTUAL/PAGINADA
+  // SELECTOR DE VISTA (POR MARCAS vs TABLA DETALLADA)
+  // ========================================================
+  switchView(mode) {
+    this.currentViewMode = mode;
+    const btnBrands = document.getElementById('btn-view-brands');
+    const btnTable = document.getElementById('btn-view-table');
+    const cBrands = document.getElementById('container-view-brands');
+    const cTable = document.getElementById('container-view-table');
+
+    if (mode === 'brands') {
+      if (btnBrands) btnBrands.className = "px-3 py-1.5 rounded-md font-bold text-sky-800 bg-white shadow-xs transition flex items-center gap-1.5";
+      if (btnTable) btnTable.className = "px-3 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5";
+      if (cBrands) cBrands.classList.remove('hidden');
+      if (cTable) cTable.classList.add('hidden');
+      this.applyFiltersAndRender();
+    } else {
+      if (btnBrands) btnBrands.className = "px-3 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5";
+      if (btnTable) btnTable.className = "px-3 py-1.5 rounded-md font-bold text-sky-800 bg-white shadow-xs transition flex items-center gap-1.5";
+      if (cBrands) cBrands.classList.add('hidden');
+      if (cTable) cTable.classList.remove('hidden');
+      this.applyFiltersAndRender();
+    }
+    lucide.createIcons();
+  }
+
+  setTableFilter(filterKey) {
+    this.activeTableFilter = filterKey;
+    document.querySelectorAll('.tbl-filter-btn').forEach(btn => {
+      btn.className = "tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50";
+    });
+    const activeBtn = event?.target?.closest('.tbl-filter-btn');
+    if (activeBtn) {
+      activeBtn.className = "tbl-filter-btn active text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 text-white shadow-xs";
+    }
+    this.applyFiltersAndRender();
+  }
+
+  // ========================================================
+  // FILTRADO Y RENDERIZADO
   // ========================================================
   applyFiltersAndRender() {
     if (!this.comparisonResult) return;
 
-    const searchTerm = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
-    const statusFilter = document.getElementById('filter-status')?.value || 'all';
-    const diffRange = document.getElementById('filter-diff-range')?.value || 'all';
-    const providerFilter = document.getElementById('filter-provider')?.value || 'all';
-    const sortOrder = document.getElementById('filter-sort')?.value || 'diff_pct_desc';
+    const searchTerm = (
+      document.getElementById('table-search')?.value || 
+      document.getElementById('filter-search')?.value || 
+      ''
+    ).toLowerCase().trim();
+    
+    const filterBtn = this.activeTableFilter || 'todos';
 
     let list = this.comparisonResult.rows.filter(r => {
-      // Búsqueda de texto
       if (searchTerm) {
         const matchName = (r.producto || '').toLowerCase().includes(searchTerm);
         const matchCode = (r.codigo || '').toLowerCase().includes(searchTerm);
         const matchBrand = (r.marca || '').toLowerCase().includes(searchTerm);
-        if (!matchName && !matchCode && !matchBrand) return false;
+        const matchPres = (r.presentacion || '').toLowerCase().includes(searchTerm);
+        if (!matchName && !matchCode && !matchBrand && !matchPres) return false;
       }
 
-      // Filtro de Estado
-      if (statusFilter === 'en_3_listas' && r.present_count !== 3) return false;
-      if (statusFilter === 'en_2_listas' && r.present_count !== 2) return false;
-      if (statusFilter === 'exclusivo' && r.present_count !== 1) return false;
-      if (statusFilter === 'precio_igual' && r.estado_precio !== 'Precio igual') return false;
-      if (statusFilter === 'dudoso' && !r.es_dudoso) return false;
-
-      // Filtro de Rango de Diferencia %
-      if (diffRange === 'gt_50' && (r.diferencia_porcentaje || 0) < 50) return false;
-      if (diffRange === 'gt_25' && (r.diferencia_porcentaje || 0) < 25) return false;
-      if (diffRange === 'gt_10' && (r.diferencia_porcentaje || 0) < 10) return false;
-      if (diffRange === 'equal' && (r.diferencia_porcentaje || 0) > 0.001) return false;
-
-      // Filtro de Proveedor Más Barato
-      if (providerFilter !== 'all') {
-        const targetIdx = parseInt(providerFilter);
-        if (r.proveedor_mas_barato_idx !== targetIdx) return false;
-      }
+      if (filterBtn === 'mas_barato_l1' && r.proveedor_mas_barato_idx !== 0) return false;
+      if (filterBtn === 'mas_barato_l2' && r.proveedor_mas_barato_idx !== 1) return false;
+      if (filterBtn === 'mas_barato_l3' && r.proveedor_mas_barato_idx !== 2) return false;
+      if (filterBtn === 'exclusivos' && r.present_count !== 1) return false;
+      if (filterBtn === 'dudosos' && !r.es_dudoso) return false;
 
       return true;
     });
 
-    // Ordenamiento
-    list.sort((a, b) => {
-      if (sortOrder === 'diff_pct_desc') return (b.diferencia_porcentaje || 0) - (a.diferencia_porcentaje || 0);
-      if (sortOrder === 'diff_money_desc') return (b.diferencia_dinero || 0) - (a.diferencia_dinero || 0);
-      if (sortOrder === 'name_asc') return (a.producto || '').localeCompare(b.producto || '');
-      if (sortOrder === 'price_min_asc') return (a.precio_min || 999999999) - (b.precio_min || 999999999);
-      if (sortOrder === 'price_min_desc') return (b.precio_min || 0) - (a.precio_min || 0);
-      return 0;
-    });
-
     this.filteredRows = list;
     this.currentPage = 1;
-    this.renderTablePage();
+
+    if (this.currentViewMode === 'brands') {
+      this.renderBrandsView();
+    } else {
+      this.renderTablePage();
+    }
+  }
+
+  renderBrandsView() {
+    const container = document.getElementById('container-view-brands');
+    if (!container || !this.comparisonResult) return;
+    container.innerHTML = '';
+
+    const rows = this.filteredRows || this.comparisonResult.rows || [];
+    if (rows.length === 0) {
+      container.innerHTML = `<div class="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-200">No se encontraron productos con el filtro actual.</div>`;
+      return;
+    }
+
+    const brandMap = {};
+    rows.forEach(r => {
+      let bName = (r.marca || '').trim();
+      if (!bName || bName.toLowerCase() === 'sin marca') {
+        const words = (r.producto || '').split(' ');
+        bName = words.length > 0 ? words[0] : 'General';
+      }
+      bName = bName.charAt(0).toUpperCase() + bName.slice(1);
+      if (!brandMap[bName]) brandMap[bName] = [];
+      brandMap[bName].push(r);
+    });
+
+    const sortedBrands = Object.keys(brandMap).sort((a, b) => brandMap[b].length - brandMap[a].length);
+
+    sortedBrands.forEach(brand => {
+      const items = brandMap[brand];
+      const card = document.createElement('div');
+      card.className = "bg-white rounded-xl border border-slate-200 p-4 shadow-xs";
+      
+      let itemsHtml = '';
+      items.forEach(it => {
+        let diffBadge = '';
+        if (it.diferencia_dinero > 0) {
+          const sign = (it.precio_l2 && it.precio_l1 && it.precio_l2 > it.precio_l1) ? '+' : '';
+          diffBadge = `<span class="bg-rose-50 text-rose-700 font-bold px-2 py-0.5 rounded text-[11px] border border-rose-200">${sign}$${it.diferencia_dinero.toLocaleString('es-AR', {minimumFractionDigits: 2})} (${it.diferencia_porcentaje}%)</span>`;
+        } else if (it.estado_precio === 'Precio igual') {
+          diffBadge = `<span class="bg-slate-100 text-slate-600 font-medium px-2 py-0.5 rounded text-[11px]">Mismo precio</span>`;
+        } else {
+          diffBadge = `<span class="bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded text-[11px]">${it.proveedor_mas_barato}</span>`;
+        }
+
+        let provPricesHtml = '';
+        [0, 1, 2].forEach(idx => {
+          if (this.uploadedFiles[idx]) {
+            const pVal = it[`precio_l${idx + 1}`];
+            const pName = this.configs[idx].nombre;
+            const isBest = (it.proveedor_mas_barato_idx === idx);
+            provPricesHtml += `
+              <div class="flex items-center gap-1 text-xs ${isBest ? 'font-bold text-emerald-700' : 'text-slate-600'}">
+                <span class="text-[11px] text-slate-400 font-normal">${pName}:</span>
+                <span>${pVal ? '$' + pVal.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '<i class="text-slate-300 font-normal">No presente</i>'}</span>
+                ${isBest && it.present_count > 1 ? '<span class="text-[9px] bg-emerald-100 text-emerald-800 px-1 rounded font-black">LÍDER</span>' : ''}
+              </div>
+            `;
+          }
+        });
+
+        itemsHtml += `
+          <div class="py-2.5 border-b border-slate-100 last:border-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="space-y-0.5">
+              <div class="font-bold text-slate-800 text-sm">${it.producto}</div>
+              <div class="text-[11px] text-slate-400 flex items-center gap-2">
+                ${it.codigo ? `<span>Cód: ${it.codigo}</span>` : ''}
+                ${it.presentacion ? `<span>Pres: ${it.presentacion}</span>` : ''}
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-4 sm:gap-6 shrink-0">
+              <div class="flex flex-wrap items-center gap-3">
+                ${provPricesHtml}
+              </div>
+              <div>${diffBadge}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🏷️</span>
+            <h4 class="font-extrabold text-slate-900 text-sm tracking-tight">${brand}</h4>
+            <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full">${items.length} productos</span>
+          </div>
+        </div>
+        <div class="divide-y divide-slate-50">
+          ${itemsHtml}
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+
+    lucide.createIcons();
   }
 
   renderTablePage() {
-    const tbody = document.getElementById('tbody-comparison-rows');
+    const tbody = document.getElementById('tbody-products') || document.getElementById('tbody-comparison-rows');
     if (!tbody) return;
     tbody.innerHTML = '';
 
     const total = this.filteredRows.length;
-    const totalAll = this.comparisonResult?.rows?.length || 0;
-    document.getElementById('txt-table-count').innerText = `Mostrando ${total.toLocaleString()} de ${totalAll.toLocaleString()} productos procesados`;
-
-    const startIdx = (this.currentPage - 1) * this.pageSize;
-    const endIdx = Math.min(startIdx + this.pageSize, total);
-    const pageRows = this.filteredRows.slice(startIdx, endIdx);
-
-    const maxPages = Math.ceil(total / this.pageSize) || 1;
-    document.getElementById('txt-pagination-info').innerText = `Página ${this.currentPage} de ${maxPages}`;
-    document.getElementById('btn-prev-page').disabled = this.currentPage <= 1;
-    document.getElementById('btn-next-page').disabled = this.currentPage >= maxPages;
+    const countInfo = document.getElementById('txt-pagination-info');
+    if (countInfo) countInfo.innerText = `Mostrando ${total.toLocaleString()} productos`;
 
     pageRows.forEach((r, i) => {
       const globalRowIdx = startIdx + i;

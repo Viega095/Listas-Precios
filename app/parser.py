@@ -213,27 +213,45 @@ def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
         raise ValueError("El archivo PDF no contiene texto extraíble o es un documento escaneado sin OCR.")
         
     parsed_rows = []
+    price_pattern = re.compile(r'(\$?\s*\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?|\$?\s*\d+(?:[.,]\d{1,2})?)\s*$')
+
     for l in all_lines:
         if '\t' in l:
-            parts = [p.strip() for p in l.split('\t')]
+            parts = [p.strip() for p in l.split('\t') if p.strip()]
         elif '|' in l:
             parts = [p.strip() for p in l.split('|') if p.strip()]
         elif ';' in l:
-            parts = [p.strip() for p in l.split(';')]
+            parts = [p.strip() for p in l.split(';') if p.strip()]
         else:
+            # Separar por múltiples espacios
             parts = [p.strip() for p in re.split(r'\s{2,}', l) if p.strip()]
             if len(parts) <= 1:
-                match = re.match(r'^([A-Za-z0-9_-]+)\s+(.+?)\s+(\d+[\.,]?\d*)$', l)
-                if match:
-                    parts = [match.group(1), match.group(2), match.group(3)]
+                # Intentar extraer precio al final de la línea
+                match_p = price_pattern.search(l)
+                if match_p and match_p.start() > 0:
+                    desc_part = l[:match_p.start()].strip()
+                    price_part = match_p.group(1).replace('$', '').strip()
+                    # Verificar si la descripción empieza con un código alfanumérico
+                    match_code = re.match(r'^([A-Za-z0-9_-]{3,15})\s+(.+)$', desc_part)
+                    if match_code:
+                        parts = [match_code.group(1), match_code.group(2), price_part]
+                    else:
+                        parts = [desc_part, price_part]
                 else:
                     parts = [l]
-        parsed_rows.append(parts)
+        if parts:
+            parsed_rows.append(parts)
         
     max_cols = max((len(r) for r in parsed_rows), default=1)
     if max_cols > 1:
-        headers = [f"Columna_{i+1}" for i in range(max_cols)]
-        if len(parsed_rows[0]) == max_cols and not any(re.search(r'\d+\.\d{2}', str(x)) for x in parsed_rows[0]):
+        if max_cols == 2:
+            headers = ["Detalle_Producto", "Precio"]
+        elif max_cols == 3:
+            headers = ["Codigo", "Detalle_Producto", "Precio"]
+        else:
+            headers = [f"Columna_{i+1}" for i in range(max_cols)]
+            
+        if len(parsed_rows[0]) == max_cols and not any(re.search(r'\d', str(x)) for x in parsed_rows[0]):
             headers = parsed_rows[0]
             data_rows = parsed_rows[1:]
         else:

@@ -152,6 +152,15 @@ def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_numb
     presentacion = str(row_dict.get('presentacion', '') or '').strip()
     unidad = str(row_dict.get('unidad', '') or '').strip()
     
+    # Inferir marca si viene vacía a partir del nombre del producto
+    if not marca and descripcion:
+        words = [w for w in descripcion.split() if len(w) > 2]
+        if words:
+            if len(words) >= 2 and words[0].lower() in ('royal', 'la', 'los', 'las', 'san', 'pro', 'dog', 'cat', 'coca', 'dr', 'head'):
+                marca = f"{words[0]} {words[1]}".title()
+            else:
+                marca = words[0].title()
+    
     # Precios y cantidades
     precio_raw = row_dict.get('precio', '')
     precio_final_raw = row_dict.get('precio_final', '')

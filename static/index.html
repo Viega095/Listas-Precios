@@ -328,8 +328,37 @@
         </div>
       </div>
 
-      <!-- Tabla Comparativa Detallada de Productos -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <!-- Selector de Modo de Visualización -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-700">Ver Comparación:</span>
+          <div class="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1 text-xs">
+            <button id="btn-view-brands" onclick="window.app.switchView('brands')" class="px-3 py-1.5 rounded-md font-bold text-sky-800 bg-white shadow-xs transition flex items-center gap-1.5">
+              <i data-lucide="tag" class="w-3.5 h-3.5"></i> Vista por Marcas (Resumen Rápido)
+            </button>
+            <button id="btn-view-table" onclick="window.app.switchView('table')" class="px-3 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+              <i data-lucide="table" class="w-3.5 h-3.5"></i> Tabla Detallada
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="window.app.exportFile('excel')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-xs transition">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar a Excel
+          </button>
+          <button onclick="window.app.exportFile('pdf')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-xs transition">
+            <i data-lucide="file-text" class="w-4 h-4"></i> PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- VISTA 1: AGRUPADA POR MARCAS (Estilo directo sin límite de caracteres) -->
+      <div id="container-view-brands" class="space-y-4">
+        <!-- Tarjetas por marca renderizadas por app.js -->
+      </div>
+
+      <!-- VISTA 2: TABLA COMPARATIVA DETALLADA -->
+      <div id="container-view-table" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         
         <!-- Barra de Herramientas de la Tabla -->
         <div class="p-4 border-b border-slate-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-50/50">
@@ -348,16 +377,6 @@
             <button onclick="window.app.setTableFilter('mas_barato_l3')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50" id="filter-btn-l3">Más Barato L3</button>
             <button onclick="window.app.setTableFilter('exclusivos')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50">Exclusivos</button>
             <button onclick="window.app.setTableFilter('dudosos')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50">Dudosos</button>
-          </div>
-
-          <!-- Botones de Exportación General -->
-          <div class="flex items-center gap-2">
-            <button onclick="window.app.exportFile('excel')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition">
-              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar Excel
-            </button>
-            <button onclick="window.app.exportFile('pdf')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition">
-              <i data-lucide="file-text" class="w-4 h-4"></i> PDF
-            </button>
           </div>
         </div>
 
