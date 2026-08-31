@@ -140,25 +140,27 @@ class PriceComparatorApp {
 
   goToStep(step) {
     this.currentStep = step;
-    document.querySelectorAll('.step-section').forEach(s => s.classList.add('hidden'));
-    document.getElementById(`section-step-${step}`).classList.remove('hidden');
+    const sec1 = document.getElementById('section-step-1');
+    const sec5 = document.getElementById('section-step-5');
+    const nav1 = document.getElementById('nav-step-1');
+    const nav5 = document.getElementById('nav-step-5');
+    const btnBack = document.getElementById('btn-back-to-upload');
 
-    // Actualizar botones del wizard
-    for (let i = 1; i <= 5; i++) {
-      const btn = document.getElementById(`nav-step-${i}`);
-      if (i === step) {
-        btn.className = "step-btn active flex items-center gap-2 px-3 py-1.5 rounded-lg text-sky-700 bg-sky-50 font-semibold border border-sky-200";
-      } else if (i < step) {
-        btn.className = "step-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-700 hover:bg-slate-100";
-      } else {
-        btn.className = "step-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-400 hover:bg-slate-50";
-      }
+    if (step === 1) {
+      if (sec1) sec1.classList.remove('hidden');
+      if (sec5) sec5.classList.add('hidden');
+      if (nav1) nav1.className = "step-btn active flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sky-700 bg-sky-50 font-bold border border-sky-200 transition";
+      if (nav5) nav5.className = "step-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition";
+      if (btnBack) btnBack.classList.add('hidden');
+    } else {
+      if (sec1) sec1.classList.add('hidden');
+      if (sec5) sec5.classList.remove('hidden');
+      if (nav1) nav1.className = "step-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition";
+      if (nav5) nav5.className = "step-btn active flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sky-700 bg-sky-50 font-bold border border-sky-200 transition";
+      if (btnBack) btnBack.classList.remove('hidden');
+      this.renderResultsDashboard();
+      this.renderDoubtfulList();
     }
-
-    if (step === 2) this.renderMappingView();
-    if (step === 3) this.renderConfigCards();
-    if (step === 4) this.renderDoubtfulList();
-    if (step === 5) this.renderResultsDashboard();
 
     lucide.createIcons();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -498,11 +500,7 @@ class PriceComparatorApp {
 
       document.getElementById('btn-save-session').classList.remove('hidden');
 
-      if (doubtfulCount > 0) {
-        this.goToStep(4);
-      } else {
-        this.goToStep(5);
-      }
+      this.goToStep(5);
 
       this.showAlert('success', `¡Procesamiento completo! Se analizaron ${data.total_items.toLocaleString()} artículos.`);
 
@@ -515,16 +513,19 @@ class PriceComparatorApp {
 
   renderDoubtfulList() {
     const container = document.getElementById('doubtful-list-container');
-    const noMsg = document.getElementById('no-doubtful-msg');
+    const banner = document.getElementById('doubtful-banner');
+    const countText = document.getElementById('doubtful-count-text');
+    if (!container) return;
     container.innerHTML = '';
 
     const doubtfulRows = (this.comparisonResult?.rows || []).filter(r => r.es_dudoso);
 
     if (doubtfulRows.length === 0) {
-      noMsg.classList.remove('hidden');
+      if (banner) banner.classList.add('hidden');
       return;
     }
-    noMsg.classList.add('hidden');
+    if (banner) banner.classList.remove('hidden');
+    if (countText) countText.innerText = doubtfulRows.length;
 
     doubtfulRows.forEach(r => {
       const card = document.createElement('div');
@@ -536,9 +537,9 @@ class PriceComparatorApp {
             <span class="bg-amber-100 text-amber-800 border border-amber-300/60 px-2 py-0.5 rounded text-[10px] font-semibold">Similitud: ${Math.round(r.similitud || r.confidence || 0)}%</span>
           </div>
           <div class="text-slate-600 grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
-            <div><b>${this.configs[0].nombre}:</b> ${r.desc_l1 || '<i>No presente</i>'} (${r.precio_l1 ? '$' + r.precio_l1 : '-'})</div>
-            <div><b>${this.configs[1].nombre}:</b> ${r.desc_l2 || '<i>No presente</i>'} (${r.precio_l2 ? '$' + r.precio_l2 : '-'})</div>
-            <div><b>${this.configs[2].nombre}:</b> ${r.desc_l3 || '<i>No presente</i>'} (${r.precio_l3 ? '$' + r.precio_l3 : '-'})</div>
+            <div><b>${this.configs[0].nombre}:</b> ${r.desc_l1 || '<i>No presente</i>'} (${r.precio_l1 ? '$' + r.precio_l1.toLocaleString('es-AR') : '-'})</div>
+            <div><b>${this.configs[1].nombre}:</b> ${r.desc_l2 || '<i>No presente</i>'} (${r.precio_l2 ? '$' + r.precio_l2.toLocaleString('es-AR') : '-'})</div>
+            <div><b>${this.configs[2].nombre}:</b> ${r.desc_l3 || '<i>No presente</i>'} (${r.precio_l3 ? '$' + r.precio_l3.toLocaleString('es-AR') : '-'})</div>
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
@@ -579,6 +580,8 @@ class PriceComparatorApp {
       }
 
       this.renderDoubtfulList();
+      this.renderResultsDashboard();
+      this.renderTable();
       this.showAlert('success', action === 'confirm' ? 'Coincidencia confirmada.' : 'Productos separados correctamente.');
     } catch (err) {
       this.showAlert('error', err.message);
@@ -601,6 +604,8 @@ class PriceComparatorApp {
 
       document.getElementById('badge-dudosos').classList.add('hidden');
       this.renderDoubtfulList();
+      this.renderResultsDashboard();
+      this.renderTable();
       this.showAlert('success', action === 'confirm_all' ? 'Se confirmaron todos los productos dudosos.' : 'Se separaron todos los productos dudosos.');
     } catch (err) {
       this.showAlert('error', err.message);

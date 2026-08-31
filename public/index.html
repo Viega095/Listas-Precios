@@ -60,38 +60,26 @@
     </div>
   </header>
 
-  <!-- Barra de Pasos / Wizard Navigation -->
+  <!-- Barra de Navegación Simplificada -->
   <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-[61px] z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between overflow-x-auto py-2.5 gap-2 text-sm font-medium">
-        <button id="nav-step-1" class="step-btn active flex items-center gap-2 px-3 py-1.5 rounded-lg text-sky-700 bg-sky-50 font-semibold border border-sky-200">
-          <span class="w-5 h-5 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center font-bold">1</span>
-          Cargar Listas
-        </button>
-        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
-        
-        <button id="nav-step-2" class="step-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50">
-          <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center font-bold">2</span>
-          Mapeo de Columnas
-        </button>
-        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
+      <div class="flex items-center justify-between py-2.5 gap-2 text-sm font-medium">
+        <div class="flex items-center gap-3">
+          <button id="nav-step-1" onclick="window.app.goToStep(1)" class="step-btn active flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sky-700 bg-sky-50 font-bold border border-sky-200 transition">
+            <span class="w-5 h-5 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center font-bold">1</span>
+            Cargar Listas
+          </button>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
+          
+          <button id="nav-step-5" onclick="window.app.goToStep(5)" class="step-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50 transition">
+            <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center font-bold">2</span>
+            Resultados y Pedidos
+            <span id="badge-dudosos" class="hidden bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+          </button>
+        </div>
 
-        <button id="nav-step-3" class="step-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50">
-          <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center font-bold">3</span>
-          Configurar IVA y Precios
-        </button>
-        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
-
-        <button id="nav-step-4" class="step-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50">
-          <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center font-bold">4</span>
-          Revisión de Dudas
-          <span id="badge-dudosos" class="hidden bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
-        </button>
-        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
-
-        <button id="nav-step-5" class="step-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50">
-          <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center font-bold">5</span>
-          Resultados y Totales
+        <button id="btn-back-to-upload" onclick="window.app.goToStep(1)" class="hidden text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Cambiar Archivos
         </button>
       </div>
     </div>
@@ -108,15 +96,15 @@
     <!-- ========================================== -->
     <section id="section-step-1" class="step-section space-y-6">
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <div class="flex items-start justify-between">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h2 class="text-xl font-bold text-slate-800">1. Carga de Listas de Precios</h2>
             <p class="text-sm text-slate-500 mt-1">
-              Cargá hasta 3 listas en formatos <b>Excel (.xlsx, .xls)</b>, <b>CSV</b> o <b>PDF</b>.
+              Arrastrá o seleccioná hasta 3 listas en <b>Excel (.xlsx, .xls)</b>, <b>CSV</b> o <b>PDF</b>.
             </p>
           </div>
           <div class="flex items-center gap-2.5">
-            <button onclick="window.app.loadDemoData()" class="bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition">
+            <button onclick="window.app.loadDemoData()" class="bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow-sm flex items-center gap-1.5 transition">
               <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i> Cargar Datos de Ejemplo
             </button>
           </div>
@@ -196,123 +184,65 @@
 
         </div>
 
-        <div class="mt-8 flex justify-end">
-          <button id="btn-goto-step-2" onclick="window.app.goToStep(2)" disabled class="bg-sky-600 hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg shadow flex items-center gap-2 transition">
-            Continuar al Mapeo de Columnas <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        <!-- Botón Principal de Comparación -->
+        <div class="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-6">
+          <button type="button" onclick="document.getElementById('advanced-settings-drawer').classList.toggle('hidden'); lucide.createIcons();" class="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1.5 font-medium transition">
+            <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Ajustes Avanzados de Columnas e IVA (Opcional)
+          </button>
+
+          <button id="btn-goto-step-2" onclick="window.app.processComparison()" disabled class="w-full sm:w-auto bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-8 py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2.5 transition text-base">
+            <i data-lucide="sparkles" class="w-5 h-5 text-amber-300"></i> Comparar Precios y Ver Resultados ➔
           </button>
         </div>
-      </div>
-    </section>
 
-    <!-- ========================================== -->
-    <!-- PASO 2: MAPEO DE COLUMNAS INTELIGENTE      -->
-    <!-- ========================================== -->
-    <section id="section-step-2" class="step-section hidden space-y-6">
-      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <div class="flex items-center justify-between mb-4">
+        <!-- Opciones Avanzadas Colapsables (Opcionales) -->
+        <div id="advanced-settings-drawer" class="hidden mt-6 pt-6 border-t border-slate-200 space-y-6">
           <div>
-            <h2 class="text-xl font-bold text-slate-800">2. Revisión y Mapeo de Columnas</h2>
-            <p class="text-sm text-slate-500">
-              El sistema identificó automáticamente las columnas. Confirmá o modificá la asignación si es necesario.
-            </p>
+            <h3 class="font-bold text-slate-800 text-sm mb-1">Mapeo de Columnas</h3>
+            <p class="text-xs text-slate-500 mb-3">El sistema autodetecta las columnas automáticamente. Solo modificá si querés cambiar alguna asignación.</p>
+            <div class="flex gap-2 mb-3" id="mapping-list-tabs"></div>
+            <div id="mapping-container" class="space-y-4"></div>
           </div>
-          <!-- Selector de lista a configurar -->
-          <div class="flex gap-2" id="mapping-list-tabs"></div>
+
+          <div class="pt-4 border-t border-slate-100">
+            <h3 class="font-bold text-slate-800 text-sm mb-1">Configuración Financiera (IVA y Descuentos)</h3>
+            <p class="text-xs text-slate-500 mb-3">Ajustá IVA o descuentos si alguna lista viene sin impuestos incluidos.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="configs-container"></div>
+          </div>
         </div>
 
-        <div id="mapping-container" class="space-y-6">
-          <!-- Contenido dinámico del mapeo generado por app.js -->
-        </div>
-
-        <div class="mt-8 flex justify-between border-t border-slate-200 pt-5">
-          <button onclick="window.app.goToStep(1)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-lg flex items-center gap-2">
-            <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver a Carga
-          </button>
-          <button onclick="window.app.goToStep(3)" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow flex items-center gap-2">
-            Confirmar y Configurar Precios <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
-        </div>
       </div>
     </section>
 
     <!-- ========================================== -->
-    <!-- PASO 3: CONFIGURACIÓN FINANCIERA E IVA     -->
-    <!-- ========================================== -->
-    <section id="section-step-3" class="step-section hidden space-y-6">
-      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-xl font-bold text-slate-800">3. Configuración de Precios, IVA y Descuentos</h2>
-            <p class="text-sm text-slate-500 mt-1">
-              Personalizá el tratamiento de IVA o descuentos si tus listas vienen sin impuestos.
-            </p>
-          </div>
-          <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 px-3.5 py-2 rounded-xl text-xs flex items-center gap-2 shadow-xs">
-            <i data-lucide="sparkles" class="w-4 h-4 text-emerald-600 shrink-0"></i>
-            <span><b>Tip simple:</b> Si los precios ya son finales, ¡dejá todo como está y procesá directo!</span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6" id="configs-container">
-          <!-- Tarjetas de configuración generadas por app.js -->
-        </div>
-
-        <div class="mt-8 flex justify-between border-t border-slate-200 pt-5">
-          <button onclick="window.app.goToStep(2)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-lg flex items-center gap-2">
-            <i data-lucide="arrow-left" class="w-4 h-4"></i> Volver a Mapeo
-          </button>
-          <button id="btn-start-process" onclick="window.app.processComparison()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-7 py-2.5 rounded-lg shadow flex items-center gap-2 text-base transition">
-            <i data-lucide="play" class="w-5 h-5"></i> Procesar y Comparar Listas
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- PASO 4: REVISIÓN DE COINCIDENCIAS DUDOSAS  -->
-    <!-- ========================================== -->
-    <section id="section-step-4" class="step-section hidden space-y-6">
-      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <i data-lucide="help-circle" class="w-6 h-6 text-amber-500"></i>
-              4. Revisión de Coincidencias Dudosas
-            </h2>
-            <p class="text-sm text-slate-500 mt-1">
-              Estos productos tienen nombres similares pero no exactos. Podés confirmar si son el mismo producto o separarlos individual o masivamente.
-            </p>
-          </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button onclick="window.app.overrideAll('confirm_all')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition">
-              <i data-lucide="check-check" class="w-4 h-4"></i> Confirmar Todos
-            </button>
-            <button onclick="window.app.overrideAll('unlink_all')" class="bg-slate-600 hover:bg-slate-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition">
-              <i data-lucide="split" class="w-4 h-4"></i> Separar Todos
-            </button>
-            <button onclick="window.app.goToStep(5)" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition">
-              Ver Resultados <i data-lucide="arrow-right" class="w-4 h-4"></i>
-            </button>
-          </div>
-        </div>
-
-        <div id="doubtful-list-container" class="mt-6 space-y-4">
-          <!-- Items dudosos generados por app.js -->
-        </div>
-
-        <div id="no-doubtful-msg" class="hidden py-12 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
-          <i data-lucide="check-check" class="w-12 h-12 text-emerald-500 mx-auto mb-2"></i>
-          <h3 class="text-base font-bold text-slate-700">¡Todo claro!</h3>
-          <p class="text-sm text-slate-400">No hay coincidencias dudosas pendientes de revisión.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- PASO 5: RESULTADOS, DASHBOARD Y TABLA      -->
+    <!-- PASO 2 (RESULTADOS, DASHBOARD Y TABLA)     -->
     <!-- ========================================== -->
     <section id="section-step-5" class="step-section hidden space-y-6">
       
+      <!-- Banner de Dudosos (Si los hubiera) -->
+      <div id="doubtful-banner" class="hidden bg-amber-50 border border-amber-300/80 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+        <div class="flex items-center gap-2.5">
+          <i data-lucide="help-circle" class="w-5 h-5 text-amber-600 shrink-0"></i>
+          <div>
+            <h4 class="font-bold text-amber-900 text-sm">Se detectaron <span id="doubtful-count-text">0</span> productos con nombres parecidos</h4>
+            <p class="text-xs text-amber-800/80">Podés confirmar si son el mismo artículo o separarlos.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="document.getElementById('doubtful-drawer').classList.toggle('hidden'); lucide.createIcons();" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-xs transition">
+            Revisar Dudas
+          </button>
+          <button onclick="window.app.overrideAll('confirm_all')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-xs transition">
+            Confirmar Todos
+          </button>
+        </div>
+      </div>
+
+      <!-- Desplegable de Dudosos -->
+      <div id="doubtful-drawer" class="hidden space-y-3 bg-white p-4 rounded-xl border border-amber-200">
+        <div id="doubtful-list-container" class="space-y-3"></div>
+      </div>
+
       <!-- Panel Superior de Métricas y Totales (Dashboard KPI) -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="kpi-cards-container">
         <!-- Tarjeta 1: Total Óptimo -->
@@ -351,208 +281,171 @@
             <span class="text-xs font-semibold uppercase tracking-wider">Líderes en Precio</span>
             <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i>
           </div>
-          <div class="text-xs space-y-1 mt-2 text-slate-600" id="kpi-cheapest-leaders">
+          <div class="mt-2 space-y-1 text-xs text-slate-700 font-medium" id="kpi-cheapest-leaders">
             <!-- Dinámico -->
           </div>
         </div>
       </div>
 
-      <!-- Tarjeta de Recomendación Estratégica Directa (Fácil de entender) -->
-      <div class="bg-gradient-to-r from-amber-50 via-sky-50 to-emerald-50 border border-sky-200 p-5 rounded-2xl shadow-sm space-y-2.5" id="card-executive-advice">
-        <div class="flex items-center gap-2 text-slate-900 font-black text-sm">
-          <i data-lucide="lightbulb" class="w-5 h-5 text-amber-500 animate-bounce"></i>
-          <span>Recomendación Inteligente de Compra (Explicado Simple)</span>
+      <!-- Tarjeta de Recomendación Inteligente y Plan de Pedidos -->
+      <div class="bg-gradient-to-r from-amber-50 via-orange-50/40 to-amber-50 border border-amber-200 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-lg">💡</span>
+          <h3 class="font-bold text-slate-900 text-sm">Recomendación Inteligente de Compra (Explicado Simple)</h3>
         </div>
-        <div class="text-xs text-slate-700 space-y-1.5 leading-relaxed" id="text-executive-advice">
+        <div id="text-executive-advice" class="text-xs text-slate-700 space-y-2">
           <!-- Generado dinámicamente -->
         </div>
       </div>
 
-      <!-- Resumen Comparativo de Proveedores (Totales y Ahorro por Lista) -->
-      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-            <i data-lucide="bar-chart-3" class="w-4 h-4 text-sky-600"></i>
-            Resumen Financiero Comparativo
+      <!-- Resumen Financiero por Proveedor -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i data-lucide="bar-chart-3" class="w-4 h-4 text-sky-600"></i> Resumen Financiero Comparativo
           </h3>
-          <span class="text-xs text-slate-500" id="txt-diferencia-total-listas"></span>
+          <span class="text-xs text-slate-500" id="txt-diferencia-total-listas">Diferencia total monetaria entre listas: $0.00</span>
         </div>
+
         <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left border-collapse" id="table-summary-providers">
-            <thead>
-              <tr class="bg-slate-100 text-slate-700 border-b border-slate-200 font-bold">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+              <tr>
                 <th class="py-2.5 px-3">Proveedor / Escenario</th>
                 <th class="py-2.5 px-3 text-right">Total Comparables</th>
                 <th class="py-2.5 px-3 text-right">Total General</th>
-                <th class="py-2.5 px-3 text-right">Ahorro Posible ($)</th>
-                <th class="py-2.5 px-3 text-right">Ahorro (%)</th>
+                <th class="py-2.5 px-3 text-right text-emerald-700">Ahorro Posible ($)</th>
+                <th class="py-2.5 px-3 text-right text-emerald-700">Ahorro (%)</th>
                 <th class="py-2.5 px-3 text-center">Prod. Más Baratos</th>
                 <th class="py-2.5 px-3 text-center">Exclusivos</th>
                 <th class="py-2.5 px-3 text-center">Pedido Listo</th>
               </tr>
             </thead>
             <tbody id="tbody-summary-providers" class="divide-y divide-slate-100">
-              <!-- Dinámico -->
+              <!-- Filas dinámicas -->
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- Barra de Filtros, Búsqueda y Exportación -->
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-        <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+      <!-- Tabla Comparativa Detallada de Productos -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        
+        <!-- Barra de Herramientas de la Tabla -->
+        <div class="p-4 border-b border-slate-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-50/50">
           
-          <!-- Búsqueda Instantánea -->
-          <div class="relative w-full md:w-80">
-            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
-            <input type="text" id="filter-search" placeholder="Buscar por producto, código, marca..." class="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500">
+          <!-- Buscador en tiempo real -->
+          <div class="relative flex-1 max-w-md">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="table-search" placeholder="Buscar por producto, marca, código EAN o presentación..." class="w-full bg-white border border-slate-300 rounded-lg pl-9 pr-4 py-2 text-xs focus:border-sky-500 focus:outline-none shadow-xs">
           </div>
 
           <!-- Filtros Rápidos -->
-          <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <select id="filter-status" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-white text-slate-700">
-              <option value="all">Todos los estados</option>
-              <option value="en_3_listas">Presentes en 3 listas</option>
-              <option value="en_2_listas">Presentes en 2 listas</option>
-              <option value="exclusivo">Productos exclusivos</option>
-              <option value="precio_igual">Mismo precio en todas</option>
-              <option value="dudoso">Dudosos / Sin confirmar</option>
-            </select>
-
-            <select id="filter-diff-range" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-white text-slate-700">
-              <option value="all">Cualquier diferencia %</option>
-              <option value="gt_50">Diferencia > 50%</option>
-              <option value="gt_25">Diferencia > 25%</option>
-              <option value="gt_10">Diferencia > 10%</option>
-              <option value="equal">Diferencia 0% (Iguales)</option>
-            </select>
-
-            <select id="filter-provider" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-white text-slate-700">
-              <option value="all">Todos los proveedores</option>
-              <option value="0">Más barato en Proveedor 1</option>
-              <option value="1">Más barato en Proveedor 2</option>
-              <option value="2">Más barato en Proveedor 3</option>
-            </select>
-
-            <select id="filter-sort" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-white text-slate-700 font-medium">
-              <option value="diff_pct_desc">Mayor diferencia % (Descendente)</option>
-              <option value="diff_money_desc">Mayor ahorro $ (Descendente)</option>
-              <option value="name_asc">Nombre del producto (A-Z)</option>
-              <option value="price_min_asc">Precio más bajo (Ascendente)</option>
-              <option value="price_min_desc">Precio más alto (Descendente)</option>
-            </select>
+          <div class="flex items-center gap-2 overflow-x-auto">
+            <button onclick="window.app.setTableFilter('todos')" class="tbl-filter-btn active text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 text-white shadow-xs">Todos</button>
+            <button onclick="window.app.setTableFilter('mas_barato_l1')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50" id="filter-btn-l1">Más Barato L1</button>
+            <button onclick="window.app.setTableFilter('mas_barato_l2')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50" id="filter-btn-l2">Más Barato L2</button>
+            <button onclick="window.app.setTableFilter('mas_barato_l3')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50" id="filter-btn-l3">Más Barato L3</button>
+            <button onclick="window.app.setTableFilter('exclusivos')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50">Exclusivos</button>
+            <button onclick="window.app.setTableFilter('dudosos')" class="tbl-filter-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50">Dudosos</button>
           </div>
 
-          <!-- Botones de Exportación -->
-          <div class="flex items-center gap-2 w-full md:w-auto justify-end">
-            <button onclick="window.app.exportFile('excel')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition">
-              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel
+          <!-- Botones de Exportación General -->
+          <div class="flex items-center gap-2">
+            <button onclick="window.app.exportFile('excel')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar Excel
             </button>
-            <button onclick="window.app.exportFile('csv')" class="bg-slate-700 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition">
-              <i data-lucide="file-text" class="w-4 h-4"></i> CSV
-            </button>
-            <button onclick="window.app.exportFile('pdf')" class="bg-rose-700 hover:bg-rose-800 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition">
-              <i data-lucide="file-down" class="w-4 h-4"></i> PDF
-            </button>
-            <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition">
-              <i data-lucide="printer" class="w-4 h-4"></i> Imprimir
+            <button onclick="window.app.exportFile('pdf')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition">
+              <i data-lucide="file-text" class="w-4 h-4"></i> PDF
             </button>
           </div>
         </div>
 
-        <div class="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-100">
-          <span id="txt-table-count">Mostrando 0 de 0 productos</span>
-          <span class="text-slate-500 font-medium">Tip: Hacé clic en cualquier fila para ver el desglose detallado del producto</span>
-        </div>
-      </div>
-
-      <!-- Tabla Completa de Comparación (100% de productos) con Contraste Alternado Inteligente -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto max-h-[700px] overflow-y-auto">
-          <table class="w-full text-xs text-left border-collapse" id="main-comparison-table">
-            <thead class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+        <!-- Tabla de Datos -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
               <tr>
-                <th class="py-3 px-3 w-10 text-center sticky-header sticky-col-1 bg-slate-900 border-r border-slate-700">#</th>
-                <th class="py-3 px-3 min-w-[240px] sticky-header sticky-col-2 bg-slate-900 border-r border-slate-700">Producto / Descripción</th>
-                <th class="py-3 px-3">Código</th>
-                <th class="py-3 px-3">Marca</th>
-                <th class="py-3 px-3">Pres.</th>
-                <th class="py-3 px-3 text-center">Cant.</th>
-                <th class="py-3 px-3 text-right bg-slate-800/90" id="th-prov-0">Precio Prov 1</th>
-                <th class="py-3 px-3 text-right bg-slate-800/90" id="th-prov-1">Precio Prov 2</th>
-                <th class="py-3 px-3 text-right bg-slate-800/90" id="th-prov-2">Precio Prov 3</th>
-                <th class="py-3 px-3">Más Barato</th>
-                <th class="py-3 px-3 text-right">Dif. Dinero</th>
-                <th class="py-3 px-3 text-right">Dif. %</th>
-                <th class="py-3 px-3 text-center">Estado</th>
+                <th class="py-3 px-3 w-10 text-center">#</th>
+                <th class="py-3 px-3 min-w-[200px]">Producto Normalizado</th>
+                <th class="py-3 px-2 w-28">Código</th>
+                <th class="py-3 px-2 w-24">Marca</th>
+                <th class="py-3 px-2 w-20">Pres.</th>
+                <th class="py-3 px-3 text-right" id="th-prov-0">Proveedor 1</th>
+                <th class="py-3 px-3 text-right" id="th-prov-1">Proveedor 2</th>
+                <th class="py-3 px-3 text-right" id="th-prov-2">Proveedor 3</th>
+                <th class="py-3 px-3 text-center bg-emerald-50/80 text-emerald-950 font-black">Más Barato</th>
+                <th class="py-3 px-3 text-right text-rose-700 font-bold">Diferencia $</th>
+                <th class="py-3 px-3 text-right text-rose-700 font-bold">Diferencia %</th>
+                <th class="py-3 px-2 text-center w-12">Detalle</th>
               </tr>
             </thead>
-            <tbody id="tbody-comparison-rows" class="font-normal divide-y divide-slate-200">
-              <!-- Filas generadas por app.js con paginación/virtualización y zebra striping -->
+            <tbody id="tbody-products" class="divide-y divide-slate-200">
+              <!-- Filas de productos renderizadas por app.js -->
             </tbody>
           </table>
         </div>
 
-        <!-- Paginación Visual de Navegación Rápida -->
-        <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
-          <div class="flex items-center gap-2">
-            <span class="text-slate-600 font-medium">Filas por página:</span>
-            <select id="select-page-size" class="border border-slate-300 rounded px-2 py-1 bg-white">
-              <option value="50">50</option>
-              <option value="100" selected>100</option>
-              <option value="250">250</option>
-              <option value="500">500</option>
-              <option value="1000">1000</option>
-              <option value="all">Todas las filas</option>
-            </select>
-          </div>
-          <div class="flex items-center gap-2">
-            <button id="btn-prev-page" class="px-3 py-1 bg-white border border-slate-300 rounded font-medium hover:bg-slate-100 disabled:opacity-40 transition">Anterior</button>
-            <span id="txt-pagination-info" class="text-slate-700 font-semibold px-2">Página 1 de 1</span>
-            <button id="btn-next-page" class="px-3 py-1 bg-white border border-slate-300 rounded font-medium hover:bg-slate-100 disabled:opacity-40 transition">Siguiente</button>
+        <!-- Paginación -->
+        <div class="p-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs text-slate-600">
+          <span id="txt-pagination-info">Mostrando 1 a 50 de 0 productos</span>
+          <div class="flex items-center gap-1.5" id="pagination-controls">
+            <button onclick="window.app.prevPage()" id="btn-prev-page" class="px-2.5 py-1 rounded bg-white border border-slate-300 disabled:opacity-40"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+            <span id="txt-current-page" class="font-bold px-2">1 / 1</span>
+            <button onclick="window.app.nextPage()" id="btn-next-page" class="px-2.5 py-1 rounded bg-white border border-slate-300 disabled:opacity-40"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
           </div>
         </div>
+
       </div>
 
     </section>
 
   </main>
 
-  <!-- Modal Detalle Completo de Producto (Desglose individual) -->
-  <div id="product-detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4 border border-slate-200 relative">
-      <button onclick="document.getElementById('product-detail-modal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 font-bold text-lg">✕</button>
-      
-      <div class="border-b border-slate-100 pb-3">
-        <span class="text-xs font-semibold px-2 py-0.5 rounded bg-sky-100 text-sky-800" id="modal-status-badge">Estado</span>
-        <h3 class="text-lg font-bold text-slate-900 mt-1" id="modal-product-title">Nombre del Producto</h3>
-        <p class="text-xs text-slate-500" id="modal-product-meta">Código / Marca / Presentación</p>
+  <!-- MODAL: DETALLE DE PRODUCTO Y DESGLOSE COMPLETO -->
+  <div id="product-detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-150">
+      <div class="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-100 text-sky-800" id="modal-status-badge">Comparación Directa</span>
+          <h3 class="text-base font-bold text-slate-800 mt-1" id="modal-product-title">Nombre del Producto</h3>
+          <p class="text-xs text-slate-500" id="modal-product-meta">Código: - | Marca: - | Presentación: -</p>
+        </div>
+        <button onclick="document.getElementById('product-detail-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs" id="modal-providers-breakdown">
-        <!-- 3 tarjetas de proveedores dinámicas -->
+      <div class="p-6 space-y-4">
+        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Desglose por Proveedor</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="modal-providers-breakdown"></div>
+
+        <div class="bg-slate-50 border border-slate-200 p-3.5 rounded-xl space-y-2 text-xs" id="modal-diff-breakdown"></div>
       </div>
 
-      <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs space-y-1" id="modal-diff-breakdown">
-        <!-- Resumen de diferencia y fórmula -->
-      </div>
-
-      <div class="flex justify-end pt-2">
-        <button onclick="document.getElementById('product-detail-modal').classList.add('hidden')" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-lg">
-          Cerrar Detalle
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <button onclick="document.getElementById('product-detail-modal').classList.add('hidden')" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+          Cerrar
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Modal / Loader de Progreso -->
-  <div id="loading-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center">
-    <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center space-y-4 border border-slate-200">
-      <div class="animate-spin w-12 h-12 border-4 border-sky-600 border-t-transparent rounded-full mx-auto"></div>
-      <h3 class="text-base font-bold text-slate-800" id="loading-title">Procesando productos...</h3>
-      <p class="text-xs text-slate-500" id="loading-desc">Leyendo 100% de las filas y normalizando equivalencias de catálogo.</p>
+  <!-- Loading Overlay Moderno -->
+  <div id="loading-overlay" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex flex-col items-center justify-center text-white hidden">
+    <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 text-center max-w-sm shadow-2xl flex flex-col items-center">
+      <div class="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+      <h3 class="text-base font-bold text-white mb-1" id="loading-title">Procesando Listas...</h3>
+      <p class="text-xs text-slate-400" id="loading-desc">Normalizando catálogos y comparando precios</p>
     </div>
   </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+      Comparador Profesional de Listas de Precios &copy; 2026. Procesamiento 100% en la nube.
+    </div>
+  </footer>
 
   <script src="/static/app.js"></script>
 </body>
