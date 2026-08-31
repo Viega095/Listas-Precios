@@ -641,7 +641,9 @@ class PriceComparatorApp {
     const totals = this.comparisonResult.totals;
 
     // KPI Cards
-    document.getElementById('kpi-total-optimo').innerText = `$${totals.total_optimo_comparables.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+    const elOptimo = document.getElementById('kpi-total-optimo');
+    if (elOptimo) elOptimo.innerText = `$${totals.total_optimo_comparables.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+    
     const subOpt = document.getElementById('kpi-total-optimo-sub');
     if (subOpt) {
       subOpt.innerText = `Catálogo total (con exclusivos): $${totals.total_compra_optima.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
@@ -656,16 +658,22 @@ class PriceComparatorApp {
         maxAhorroPct = a.ahorro_porcentaje;
       }
     });
-    document.getElementById('kpi-max-ahorro').innerText = `$${maxAhorro.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
-    document.getElementById('kpi-max-ahorro-pct').innerText = `${maxAhorroPct.toFixed(2)}% de ahorro potencial máximo`;
+    
+    const elMaxAhorro = document.getElementById('kpi-max-ahorro');
+    if (elMaxAhorro) elMaxAhorro.innerText = `$${maxAhorro.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+    
+    const elMaxAhorroPct = document.getElementById('kpi-max-ahorro-pct');
+    if (elMaxAhorroPct) elMaxAhorroPct.innerText = `${maxAhorroPct.toFixed(2)}% de ahorro potencial máximo`;
 
-    document.getElementById('kpi-total-items').innerText = totals.total_productos_comparados.toLocaleString();
-    document.getElementById('kpi-items-detail').innerText = `${totals.total_productos_comparables.toLocaleString()} comparables | ${totals.total_productos_exclusivos.toLocaleString()} exclusivos`;
+    const elTotalItems = document.getElementById('kpi-total-items');
+    if (elTotalItems) elTotalItems.innerText = totals.total_productos_comparados.toLocaleString();
+    
+    const elItemsDetail = document.getElementById('kpi-items-detail');
+    if (elItemsDetail) elItemsDetail.innerText = `${totals.total_productos_comparables.toLocaleString()} comparables | ${totals.total_productos_exclusivos.toLocaleString()} exclusivos`;
 
     // Generar Consejo Ejecutivo Directo (Explicación para humanos)
     const adviceBox = document.getElementById('text-executive-advice');
     if (adviceBox) {
-      // Encontrar el proveedor con más artículos baratos
       let bestProvIdx = 0;
       let maxCheapestCount = -1;
       [0, 1, 2].forEach(idx => {
@@ -731,67 +739,77 @@ class PriceComparatorApp {
       `;
     }
 
-    // Ganadores en KPI
+    // Ganadores en KPI (si existe el contenedor)
     const leadersContainer = document.getElementById('kpi-cheapest-leaders');
-    leadersContainer.innerHTML = '';
-    [0, 1, 2].forEach(idx => {
-      if (this.uploadedFiles[idx]) {
-        const count = totals.conteo_mas_baratos[idx] || 0;
-        leadersContainer.innerHTML += `<div><b>${this.configs[idx].nombre}:</b> ${count.toLocaleString()} más baratos</div>`;
-      }
-    });
+    if (leadersContainer) {
+      leadersContainer.innerHTML = '';
+      [0, 1, 2].forEach(idx => {
+        if (this.uploadedFiles[idx]) {
+          const count = totals.conteo_mas_baratos[idx] || 0;
+          leadersContainer.innerHTML += `<div><b>${this.configs[idx].nombre}:</b> ${count.toLocaleString()} más baratos</div>`;
+        }
+      });
+    }
 
     // Tabla de resumen de proveedores
-    document.getElementById('txt-diferencia-total-listas').innerText = `Diferencia total monetaria entre listas: $${totals.diferencia_total_listas.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+    const diffTotalEl = document.getElementById('txt-diferencia-total-listas');
+    if (diffTotalEl) {
+      diffTotalEl.innerText = `Diferencia total monetaria entre listas: $${totals.diferencia_total_listas.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+    }
     
     const tbodyProv = document.getElementById('tbody-summary-providers');
-    tbodyProv.innerHTML = '';
+    if (tbodyProv) {
+      tbodyProv.innerHTML = '';
 
-    [0, 1, 2].forEach(idx => {
-      if (this.uploadedFiles[idx]) {
-        const totC = totals.totales_comparables[idx] || 0;
-        const totG = totals.totales_generales[idx] || 0;
-        const ah = totals.ahorros[idx] || {};
-        const cntB = totals.conteo_mas_baratos[idx] || 0;
-        const cntE = totals.conteo_exclusivos[idx] || 0;
+      [0, 1, 2].forEach(idx => {
+        if (this.uploadedFiles[idx]) {
+          const totC = totals.totales_comparables[idx] || 0;
+          const totG = totals.totales_generales[idx] || 0;
+          const ah = totals.ahorros[idx] || {};
+          const cntB = totals.conteo_mas_baratos[idx] || 0;
+          const cntE = totals.conteo_exclusivos[idx] || 0;
 
-        tbodyProv.innerHTML += `
-          <tr class="hover:bg-slate-50">
-            <td class="py-2.5 px-3 font-semibold text-slate-800">${this.configs[idx].nombre}</td>
-            <td class="py-2.5 px-3 text-right font-medium">$${totC.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-            <td class="py-2.5 px-3 text-right font-medium">$${totG.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-            <td class="py-2.5 px-3 text-right text-emerald-700 font-bold">$${(ah.ahorro_dinero || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-            <td class="py-2.5 px-3 text-right text-emerald-700 font-bold">${(ah.ahorro_porcentaje || 0).toFixed(2)}%</td>
-            <td class="py-2.5 px-3 text-center">${cntB}</td>
-            <td class="py-2.5 px-3 text-center">${cntE}</td>
-            <td class="py-2.5 px-3 text-center">
-              <button onclick="window.app.exportOrder(${idx})" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 font-bold px-2 py-1 rounded text-[11px] flex items-center gap-1 mx-auto transition shadow-xs" title="Descargar planilla de Excel con solo los productos que conviene comprar a este proveedor">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i> Pedido .xlsx
-              </button>
-            </td>
-          </tr>
-        `;
-      }
-    });
+          tbodyProv.innerHTML += `
+            <tr class="hover:bg-slate-50">
+              <td class="py-2.5 px-3 font-semibold text-slate-800">${this.configs[idx].nombre}</td>
+              <td class="py-2.5 px-3 text-right font-medium">$${totC.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+              <td class="py-2.5 px-3 text-right font-medium">$${totG.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+              <td class="py-2.5 px-3 text-right text-emerald-700 font-bold">$${(ah.ahorro_dinero || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+              <td class="py-2.5 px-3 text-right text-emerald-700 font-bold">${(ah.ahorro_porcentaje || 0).toFixed(2)}%</td>
+              <td class="py-2.5 px-3 text-center">${cntB}</td>
+              <td class="py-2.5 px-3 text-center">${cntE}</td>
+              <td class="py-2.5 px-3 text-center">
+                <button onclick="window.app.exportOrder(${idx})" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 font-bold px-2 py-1 rounded text-[11px] flex items-center gap-1 mx-auto transition shadow-xs" title="Descargar planilla de Excel con solo los productos que conviene comprar a este proveedor">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Pedido .xlsx
+                </button>
+              </td>
+            </tr>
+          `;
+        }
+      });
 
-    // Fila Canasta Óptima
-    tbodyProv.innerHTML += `
-      <tr class="bg-emerald-50 text-emerald-950 font-bold">
-        <td class="py-2.5 px-3 flex items-center gap-1.5"><i data-lucide="sparkles" class="w-4 h-4 text-emerald-600"></i> CANASTA ÓPTIMA</td>
-        <td class="py-2.5 px-3 text-right">$${totals.total_optimo_comparables.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-        <td class="py-2.5 px-3 text-right">$${totals.total_compra_optima.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-        <td class="py-2.5 px-3 text-right">-</td>
-        <td class="py-2.5 px-3 text-right">-</td>
-        <td class="py-2.5 px-3 text-center">Todos los ítems</td>
-        <td class="py-2.5 px-3 text-center">-</td>
-        <td class="py-2.5 px-3 text-center text-slate-400 font-normal text-[10px]">Combinada</td>
-      </tr>
-    `;
+      // Fila Canasta Óptima
+      tbodyProv.innerHTML += `
+        <tr class="bg-emerald-50 text-emerald-950 font-bold">
+          <td class="py-2.5 px-3 flex items-center gap-1.5"><i data-lucide="sparkles" class="w-4 h-4 text-emerald-600"></i> CANASTA ÓPTIMA</td>
+          <td class="py-2.5 px-3 text-right">$${totals.total_optimo_comparables.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+          <td class="py-2.5 px-3 text-right">$${totals.total_compra_optima.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+          <td class="py-2.5 px-3 text-right">-</td>
+          <td class="py-2.5 px-3 text-right">-</td>
+          <td class="py-2.5 px-3 text-center">Todos los ítems</td>
+          <td class="py-2.5 px-3 text-center">-</td>
+          <td class="py-2.5 px-3 text-center text-slate-400 font-normal text-[10px]">Combinada</td>
+        </tr>
+      `;
+    }
 
     // Encabezados de proveedores en la tabla principal
-    document.getElementById('th-prov-0').innerText = `Precio ${this.configs[0].nombre}`;
-    document.getElementById('th-prov-1').innerText = `Precio ${this.configs[1].nombre}`;
-    document.getElementById('th-prov-2').innerText = `Precio ${this.configs[2].nombre}`;
+    const th0 = document.getElementById('th-prov-0');
+    const th1 = document.getElementById('th-prov-1');
+    const th2 = document.getElementById('th-prov-2');
+    if (th0) th0.innerText = `Precio ${this.configs[0].nombre}`;
+    if (th1) th1.innerText = `Precio ${this.configs[1].nombre}`;
+    if (th2) th2.innerText = `Precio ${this.configs[2].nombre}`;
 
     this.switchView(this.currentViewMode || 'brands');
     lucide.createIcons();
