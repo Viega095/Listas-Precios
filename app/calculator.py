@@ -241,11 +241,23 @@ class PriceCalculator:
                 "costo_optimo": costo_optimo_items_prov
             }
 
-        # 5. Diferencia total en dinero entre las tres listas (max total general - min total general)
+        # 5. Cálculo detallado de la Canasta Óptima de Pedido por proveedor
+        pedidos_optimos = {}
+        for l_idx in range(num_lists):
+            rows_prov_optimos = [r for r in comparison_rows if r.get('proveedor_mas_barato_idx') == l_idx]
+            monto_pedido = round(sum(r['precio_min'] * r['cantidad'] for r in rows_prov_optimos if r.get('precio_min') is not None), 2)
+            pedidos_optimos[l_idx] = {
+                "cantidad_productos": len(rows_prov_optimos),
+                "monto_total": monto_pedido,
+                "exclusivos": exclusive_counts.get(l_idx, 0),
+                "mas_baratos_comparables": cheapest_counts.get(l_idx, 0)
+            }
+
+        # 6. Diferencia total en dinero entre las tres listas (max total general - min total general)
         valid_totales = [t for t in totales_generales.values() if t > 0]
         diferencia_total_listas = round(max(valid_totales) - min(valid_totales), 2) if valid_totales else 0.0
 
-        # 6. Top 10 productos con mayor diferencia porcentual y en dinero
+        # 7. Top 10 productos con mayor diferencia porcentual y en dinero
         top_diferencia_dinero = sorted(
             [r for r in comparable_rows if r.get('diferencia_dinero', 0) > 0],
             key=lambda x: x['diferencia_dinero'],
@@ -269,6 +281,7 @@ class PriceCalculator:
             "total_compra_optima": total_compra_optima,
             "total_optimo_comparables": total_optimo_comparables,
             "ahorros": ahorros,
+            "pedidos_optimos": pedidos_optimos,
             "diferencia_total_listas": diferencia_total_listas,
             "conteo_mas_baratos": cheapest_counts,
             "conteo_exclusivos": exclusive_counts,
