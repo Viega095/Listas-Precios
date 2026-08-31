@@ -923,10 +923,12 @@ class PriceComparatorApp {
     sortedBrands.forEach(brand => {
       const items = brandMap[brand];
       const card = document.createElement('div');
-      card.className = "bg-white rounded-xl border border-slate-200 p-4 shadow-xs";
+      card.className = "bg-white rounded-xl border border-slate-300/80 shadow-xs overflow-hidden";
       
       let itemsHtml = '';
-      items.forEach(it => {
+      items.forEach((it, itemIdx) => {
+        const bgClass = (itemIdx % 2 === 0) ? 'bg-white' : 'bg-slate-50/80';
+
         let diffBadge = '';
         const uploadedCount = Object.keys(this.uploadedFiles).length;
         
@@ -934,18 +936,18 @@ class PriceComparatorApp {
           const diff = it.precio_l2 - it.precio_l1;
           const pct = it.precio_l1 > 0 ? (diff / it.precio_l1) * 100 : 0;
           if (diff > 0.01) {
-            diffBadge = `<span class="bg-rose-50 text-rose-700 font-bold px-2.5 py-1 rounded-lg text-xs border border-rose-200 flex items-center gap-1">🔺 Subió +$${diff.toLocaleString('es-AR', {minimumFractionDigits: 2})} (+${pct.toFixed(1)}%)</span>`;
+            diffBadge = `<span class="bg-rose-50 text-rose-800 font-extrabold px-3 py-1.5 rounded-lg text-xs border border-rose-200 flex items-center justify-center gap-1 shadow-2xs">🔺 Subió +$${diff.toLocaleString('es-AR', {minimumFractionDigits: 2})} (+${pct.toFixed(1)}%)</span>`;
           } else if (diff < -0.01) {
-            diffBadge = `<span class="bg-emerald-50 text-emerald-700 font-bold px-2.5 py-1 rounded-lg text-xs border border-emerald-200 flex items-center gap-1">🔻 Bajó -$${Math.abs(diff).toLocaleString('es-AR', {minimumFractionDigits: 2})} (${pct.toFixed(1)}%)</span>`;
+            diffBadge = `<span class="bg-emerald-50 text-emerald-800 font-extrabold px-3 py-1.5 rounded-lg text-xs border border-emerald-200 flex items-center justify-center gap-1 shadow-2xs">🔻 Bajó -$${Math.abs(diff).toLocaleString('es-AR', {minimumFractionDigits: 2})} (${pct.toFixed(1)}%)</span>`;
           } else {
-            diffBadge = `<span class="bg-slate-100 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-xs border border-slate-200">🟢 Mismo precio</span>`;
+            diffBadge = `<span class="bg-slate-100 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-200 flex items-center justify-center gap-1">🟢 Mismo precio</span>`;
           }
         } else if (it.diferencia_dinero > 0) {
-          diffBadge = `<span class="bg-sky-50 text-sky-800 font-bold px-2.5 py-1 rounded-lg text-xs border border-sky-200">Diferencia: $${it.diferencia_dinero.toLocaleString('es-AR', {minimumFractionDigits: 2})} (${it.diferencia_porcentaje.toFixed(1)}%)</span>`;
+          diffBadge = `<span class="bg-sky-50 text-sky-900 font-bold px-3 py-1.5 rounded-lg text-xs border border-sky-200 flex items-center justify-center gap-1">Diferencia: $${it.diferencia_dinero.toLocaleString('es-AR', {minimumFractionDigits: 2})} (${it.diferencia_porcentaje.toFixed(1)}%)</span>`;
         } else if (it.estado_precio === 'Precio igual') {
-          diffBadge = `<span class="bg-slate-100 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-xs border border-slate-200">🟢 Mismo precio</span>`;
+          diffBadge = `<span class="bg-slate-100 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-200 flex items-center justify-center gap-1">🟢 Mismo precio</span>`;
         } else {
-          diffBadge = `<span class="bg-emerald-50 text-emerald-700 font-bold px-2.5 py-1 rounded-lg text-xs border border-emerald-200">${it.proveedor_mas_barato}</span>`;
+          diffBadge = `<span class="bg-emerald-50 text-emerald-800 font-bold px-3 py-1.5 rounded-lg text-xs border border-emerald-200 flex items-center justify-center gap-1">${it.proveedor_mas_barato}</span>`;
         }
 
         let provPricesHtml = '';
@@ -955,43 +957,48 @@ class PriceComparatorApp {
             const pName = this.configs[idx].nombre;
             const isBest = (it.proveedor_mas_barato_idx === idx);
             provPricesHtml += `
-              <div class="flex items-center gap-1 text-xs ${isBest ? 'font-bold text-emerald-700' : 'text-slate-600'}">
-                <span class="text-[11px] text-slate-400 font-normal">${pName}:</span>
-                <span>${pVal ? '$' + pVal.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '<i class="text-slate-300 font-normal">No presente</i>'}</span>
-                ${isBest && it.present_count > 1 ? '<span class="text-[9px] bg-emerald-100 text-emerald-800 px-1 rounded font-black">LÍDER</span>' : ''}
+              <div class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border ${
+                isBest && it.present_count > 1 
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-black ring-1 ring-emerald-400/40' 
+                  : 'bg-white/80 border-slate-200 text-slate-700 font-medium'
+              }">
+                <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">${pName}:</span>
+                <span class="font-bold">${pVal ? '$' + pVal.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '<i class="text-slate-400 font-normal">No presente</i>'}</span>
+                ${isBest && it.present_count > 1 ? '<span class="text-[9px] bg-emerald-600 text-white px-1 py-0.2 rounded font-black ml-0.5">LÍDER</span>' : ''}
               </div>
             `;
           }
         });
 
         itemsHtml += `
-          <div class="py-2.5 border-b border-slate-100 last:border-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div class="space-y-0.5">
-              <div class="font-bold text-slate-800 text-sm">${it.producto}</div>
-              <div class="text-[11px] text-slate-400 flex items-center gap-2">
-                ${it.codigo ? `<span>Cód: ${it.codigo}</span>` : ''}
-                ${it.presentacion ? `<span>Pres: ${it.presentacion}</span>` : ''}
+          <div class="px-4 py-3.5 ${bgClass} hover:bg-sky-50/60 transition-colors border-b border-slate-200/80 last:border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="space-y-1">
+              <div class="font-extrabold text-slate-900 text-sm tracking-tight">${it.producto}</div>
+              <div class="flex flex-wrap items-center gap-2 text-[11px]">
+                ${it.codigo ? `<span class="bg-slate-100 border border-slate-200 text-slate-600 font-mono px-1.5 py-0.5 rounded">Cód: ${it.codigo}</span>` : ''}
+                ${it.presentacion ? `<span class="bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded">Pres: ${it.presentacion}</span>` : ''}
+                ${it.es_dudoso ? `<span class="bg-amber-100 border border-amber-300 text-amber-900 font-bold px-1.5 py-0.5 rounded">⚠️ Similar</span>` : ''}
               </div>
             </div>
-            <div class="flex flex-wrap items-center gap-4 sm:gap-6 shrink-0">
-              <div class="flex flex-wrap items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3 md:gap-5 shrink-0">
+              <div class="flex flex-wrap items-center gap-2">
                 ${provPricesHtml}
               </div>
-              <div>${diffBadge}</div>
+              <div class="min-w-[170px]">${diffBadge}</div>
             </div>
           </div>
         `;
       });
 
       card.innerHTML = `
-        <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-100">
+        <div class="bg-slate-100/80 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="text-base">🏷️</span>
             <h4 class="font-extrabold text-slate-900 text-sm tracking-tight">${brand}</h4>
-            <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full">${items.length} productos</span>
+            <span class="bg-slate-200/80 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-300/60">${items.length} productos</span>
           </div>
         </div>
-        <div class="divide-y divide-slate-50">
+        <div>
           ${itemsHtml}
         </div>
       `;
