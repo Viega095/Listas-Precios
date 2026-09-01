@@ -914,8 +914,17 @@ class PriceComparatorApp {
 
         itemsHtml += `
           <div class="px-4 py-3.5 ${bgClass} hover:bg-sky-50 transition-colors border-b border-slate-300 last:border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div class="space-y-1">
+            <div class="space-y-1.5 flex-1 max-w-2xl">
               <div class="font-black text-slate-950 text-sm tracking-tight">${it.producto}</div>
+              
+              <!-- Nombres exactos de cada lista comparada -->
+              <div class="flex flex-col sm:flex-row flex-wrap gap-1.5 text-[11px] bg-slate-50/90 p-1.5 rounded-lg border border-slate-200">
+                ${it.desc_l1 ? `<span class="inline-flex items-center gap-1"><span class="font-bold text-slate-700 text-[10px] uppercase bg-slate-200/80 px-1.5 py-0.5 rounded">${this.configs[0].nombre}:</span> <span class="text-slate-900 font-medium">${it.desc_l1}</span></span>` : ''}
+                ${it.desc_l1 && it.desc_l2 ? `<span class="text-slate-300 hidden sm:inline">|</span>` : ''}
+                ${it.desc_l2 ? `<span class="inline-flex items-center gap-1"><span class="font-bold text-slate-700 text-[10px] uppercase bg-slate-200/80 px-1.5 py-0.5 rounded">${this.configs[1].nombre}:</span> <span class="text-slate-900 font-medium">${it.desc_l2}</span></span>` : ''}
+                ${it.desc_l3 ? `<span class="inline-flex items-center gap-1"><span class="font-bold text-slate-700 text-[10px] uppercase bg-slate-200/80 px-1.5 py-0.5 rounded">${this.configs[2]?.nombre}:</span> <span class="text-slate-900 font-medium">${it.desc_l3}</span></span>` : ''}
+              </div>
+
               <div class="flex flex-wrap items-center gap-2 text-[11px]">
                 ${it.codigo ? `<span class="bg-white border border-slate-300 text-slate-700 font-mono px-2 py-0.5 rounded shadow-2xs font-semibold">Cód: ${it.codigo}</span>` : ''}
                 ${it.presentacion ? `<span class="bg-white border border-slate-300 text-slate-700 px-2 py-0.5 rounded shadow-2xs font-semibold">Pres: ${it.presentacion}</span>` : ''}
@@ -1008,8 +1017,12 @@ class PriceComparatorApp {
         <td class="py-3 px-3 text-center font-mono text-[11px] font-bold text-slate-500 border-r border-slate-200">
           ${rowNum}
         </td>
-        <td class="py-3 px-3 font-bold text-slate-900 truncate max-w-[260px] border-r border-slate-200">
-          ${r.producto}
+        <td class="py-3 px-3 border-r border-slate-200">
+          <div class="font-bold text-slate-900 text-xs">${r.producto}</div>
+          <div class="text-[10px] text-slate-500 flex flex-col gap-0.5 mt-1">
+            ${r.desc_l1 ? `<span><b>${this.configs[0].nombre}:</b> ${r.desc_l1}</span>` : ''}
+            ${r.desc_l2 ? `<span><b>${this.configs[1].nombre}:</b> ${r.desc_l2}</span>` : ''}
+          </div>
         </td>
         <td class="py-3 px-2 text-slate-600 font-mono text-[11px]">${r.codigo || '-'}</td>
         <td class="py-3 px-2 text-slate-700 font-medium">${r.marca || '-'}</td>

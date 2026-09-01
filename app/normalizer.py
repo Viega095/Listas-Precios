@@ -27,17 +27,23 @@ STOP_WORDS = {
 SYNONYM_REPLACEMENTS = {
     'gatos': 'gato', 'gatitos': 'gatito', 'kitten': 'gatito', 'kittens': 'gatito',
     'perros': 'perro', 'dog': 'perro', 'dogs': 'perro', 'cat': 'gato', 'cats': 'gato',
-    'cachorros': 'cachorro', 'puppy': 'cachorro', 'puppies': 'cachorro',
-    'adultos': 'adulto', 'adult': 'adulto', 'seniors': 'senior',
+    'cachorros': 'cachorro', 'puppy': 'cachorro', 'puppies': 'cachorro', 'pupy': 'cachorro',
+    'adultos': 'adulto', 'adult': 'adulto', 'ad': 'adulto', 'seniors': 'senior',
+    'junior': 'junior', 'jr': 'junior',
     'medianos': 'mediano', 'medianas': 'mediano', 'medium': 'mediano', 'med': 'mediano',
     'pequenos': 'pequeno', 'pequenas': 'pequeno', 'small': 'pequeno', 'mini': 'pequeno', 'peq': 'pequeno',
+    'chicas': 'pequeno', 'chicos': 'pequeno', 'chico': 'pequeno',
     'grandes': 'grande', 'maxi': 'grande', 'large': 'grande', 'gde': 'grande',
     'razas': 'raza', 'breed': 'raza', 'proplan': 'pro plan',
     'litros': 'l', 'litro': 'l', 'lts': 'l', 'lt': 'l',
-    'kilos': 'kg', 'kilo': 'kg', 'gr': 'g', 'gramos': 'g', 'gramo': 'g',
+    'kilos': 'kg', 'kilo': 'kg', 'gr': 'g', 'gramos': 'g', 'gramo': 'g', 'grs': 'g',
     'descremada': 'descremado', 'entera': 'entero',
     'sachet': 'sachet', 'tetra': 'tetra', 'brik': 'tetra', 'tetrabrik': 'tetra',
-    'doypack': 'doypack', 'doy': 'doypack', 'lata': 'lata', 'botella': 'botella'
+    'doypack': 'doypack', 'doy': 'doypack', 'lata': 'lata', 'latas': 'lata', 'botella': 'botella',
+    'pouch': 'pouch', 'pouches': 'pouch',
+    'hipoallergenic': 'hipoalergenico', 'hypoallergenic': 'hipoalergenico', 'hipoalergenico': 'hipoalergenico',
+    'gastro': 'gastrointestinal', 'urinary': 'urinario', 'urinaria': 'urinario',
+    'comp': 'comprimido', 'comprimidos': 'comprimido', 'pipetas': 'pipeta'
 }
 
 def remove_accents_and_clean(text: str) -> str:
