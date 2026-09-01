@@ -1068,9 +1068,12 @@ class PriceComparatorApp {
     let r = null;
     const allRows = this.comparisonResult?.rows || [];
     if (typeof identifier === 'string') {
-      r = allRows.find(x => x.group_id === identifier);
+      r = allRows.find(x => String(x.group_id).trim() === String(identifier).trim());
       if (!r && this.filteredRows) {
-        r = this.filteredRows.find(x => x.group_id === identifier);
+        r = this.filteredRows.find(x => String(x.group_id).trim() === String(identifier).trim());
+      }
+      if (!r) {
+        r = allRows.find(x => x.producto === identifier) || (this.filteredRows && this.filteredRows.find(x => x.producto === identifier));
       }
     } else if (typeof identifier === 'number') {
       r = (this.filteredRows && this.filteredRows[identifier]) ? this.filteredRows[identifier] : allRows[identifier];
@@ -1080,9 +1083,17 @@ class PriceComparatorApp {
       return;
     }
 
-    document.getElementById('modal-status-badge').innerText = r.estado_precio;
-    document.getElementById('modal-product-title').innerText = r.producto;
-    document.getElementById('modal-product-meta').innerText = `Código: ${r.codigo || 'Sin código'} | Marca: ${r.marca || 'N/A'} | Presentación: ${r.presentacion || 'N/A'}`;
+    const modal = document.getElementById('product-detail-modal');
+    if (!modal) return;
+
+    const statusBadge = document.getElementById('modal-status-badge');
+    if (statusBadge) statusBadge.innerText = r.estado_precio || 'Comparación';
+    
+    const prodTitle = document.getElementById('modal-product-title');
+    if (prodTitle) prodTitle.innerText = r.producto || 'Producto';
+    
+    const prodMeta = document.getElementById('modal-product-meta');
+    if (prodMeta) prodMeta.innerText = `Código: ${r.codigo || 'Sin código'} | Marca: ${r.marca || 'N/A'} | Presentación: ${r.presentacion || 'N/A'}`;
 
     const diffDinero = (typeof r.diferencia_dinero === 'number' && !isNaN(r.diferencia_dinero)) ? r.diferencia_dinero : 0;
     const diffPct = (typeof r.diferencia_porcentaje === 'number' && !isNaN(r.diferencia_porcentaje)) ? r.diferencia_porcentaje : 0;
@@ -1098,7 +1109,7 @@ class PriceComparatorApp {
       if (descText) {
         descText.innerHTML = `
           El precio varía un <b>${diffPct.toFixed(1)}%</b> entre proveedores (diferencia de <b>$${diffDinero.toLocaleString('es-AR', {minimumFractionDigits: 2})}</b>). 
-          Verificá si un proveedor vende por unidad suelta y otro por caja/bulto, o si el peso difiere. Si son artículos distintos, hacé clic en <b>"Separar este producto"</b> abajo.
+          Verificá si un proveedor vende por unidad suelta y otro por caja/bulto, o si el peso difiere. Si son artículos distintos, podés separarlos abajo.
         `;
       }
     } else if (alertBox) {
@@ -1106,47 +1117,52 @@ class PriceComparatorApp {
     }
 
     const provContainer = document.getElementById('modal-providers-breakdown');
-    provContainer.innerHTML = '';
+    if (provContainer) {
+      provContainer.innerHTML = '';
 
-    const listKeys = [
-      { key: 'l1', idx: 0, p: r.precio_l1, p_orig: r.precio_l1_orig, code: r.cod_l1, desc: r.desc_l1 },
-      { key: 'l2', idx: 1, p: r.precio_l2, p_orig: r.precio_l2_orig, code: r.cod_l2, desc: r.desc_l2 },
-      { key: 'l3', idx: 2, p: r.precio_l3, p_orig: r.precio_l3_orig, code: r.cod_l3, desc: r.desc_l3 }
-    ];
+      const listKeys = [
+        { key: 'l1', idx: 0, p: r.precio_l1, p_orig: r.precio_l1_orig, code: r.cod_l1, desc: r.desc_l1 },
+        { key: 'l2', idx: 1, p: r.precio_l2, p_orig: r.precio_l2_orig, code: r.cod_l2, desc: r.desc_l2 },
+        { key: 'l3', idx: 2, p: r.precio_l3, p_orig: r.precio_l3_orig, code: r.cod_l3, desc: r.desc_l3 }
+      ];
 
-    listKeys.forEach(item => {
-      const cfg = this.configs[item.idx];
-      if (!cfg || !this.uploadedFiles[item.idx]) return;
-      const isBest = (item.p !== null && r.precio_min !== null && Math.abs(item.p - r.precio_min) < 0.001);
-      
-      const card = document.createElement('div');
-      card.className = `p-3.5 rounded-xl border ${isBest ? 'bg-emerald-50/80 border-emerald-300 ring-1 ring-emerald-400' : 'bg-slate-50 border-slate-200'}`;
-      card.innerHTML = `
-        <div class="flex items-center justify-between font-bold text-slate-800 mb-2">
-          <span>${cfg.nombre}</span>
-          ${isBest ? '<span class="bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">Más Barato</span>' : ''}
-        </div>
-        <div class="space-y-1.5 text-xs text-slate-700">
-          <div><b class="text-slate-500">Precio:</b> <span class="font-extrabold ${isBest ? 'text-emerald-800 text-sm' : 'text-slate-900'}">${item.p !== null ? '$' + item.p.toLocaleString('es-AR', {minimumFractionDigits: 2}) : 'No presente'}</span></div>
-          <div><b class="text-slate-500">Código:</b> ${item.code || '-'}</div>
-          <div class="pt-1 border-t border-slate-200"><b class="text-slate-500 block text-[10px] uppercase">Nombre Original:</b> <span class="font-semibold text-slate-900">${item.desc || '<i class="text-slate-400">No presente en este proveedor</i>'}</span></div>
-        </div>
-      `;
-      provContainer.appendChild(card);
-    });
+      listKeys.forEach(item => {
+        const cfg = (this.configs && this.configs[item.idx]) ? this.configs[item.idx] : { nombre: `Proveedor ${item.idx + 1}` };
+        if (item.idx === 2 && !item.p && !item.desc && (!this.uploadedFiles || !this.uploadedFiles[2])) return;
+        
+        const isBest = (item.p !== null && item.p !== undefined && r.precio_min !== null && Math.abs(item.p - r.precio_min) < 0.001 && r.present_count > 1);
+        
+        const card = document.createElement('div');
+        card.className = `p-3.5 rounded-xl border ${isBest ? 'bg-emerald-50/80 border-emerald-300 ring-1 ring-emerald-400' : 'bg-slate-50 border-slate-200'}`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between font-bold text-slate-800 mb-2">
+            <span>${cfg.nombre}</span>
+            ${isBest ? '<span class="bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">Más Barato</span>' : ''}
+          </div>
+          <div class="space-y-1.5 text-xs text-slate-700">
+            <div><b class="text-slate-500">Precio:</b> <span class="font-extrabold ${isBest ? 'text-emerald-800 text-sm' : 'text-slate-900'}">${(item.p !== null && item.p !== undefined) ? '$' + item.p.toLocaleString('es-AR', {minimumFractionDigits: 2}) : '<i class="text-slate-400 font-normal">No presente</i>'}</span></div>
+            <div><b class="text-slate-500">Código:</b> ${item.code || '-'}</div>
+            <div class="pt-1 border-t border-slate-200"><b class="text-slate-500 block text-[10px] uppercase">Nombre Original:</b> <span class="font-semibold text-slate-900">${item.desc || '<i class="text-slate-400 font-normal">No presente en este proveedor</i>'}</span></div>
+          </div>
+        `;
+        provContainer.appendChild(card);
+      });
+    }
 
     const diffContainer = document.getElementById('modal-diff-breakdown');
-    diffContainer.innerHTML = `
-      <div class="flex items-center justify-between">
-        <span class="font-semibold text-slate-700">Diferencia monetaria:</span>
-        <span class="font-black text-slate-900 text-sm">$${diffDinero.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-      </div>
-      <div class="flex items-center justify-between">
-        <span class="font-semibold text-slate-700">Diferencia porcentual:</span>
-        <span class="font-black text-rose-700 text-sm">${diffPct.toFixed(2)}%</span>
-      </div>
-      <p class="text-[11px] text-slate-500 pt-1 border-t border-slate-200 mt-1">${diffExpl}</p>
-    `;
+    if (diffContainer) {
+      diffContainer.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-slate-700">Diferencia monetaria:</span>
+          <span class="font-black text-slate-900 text-sm">$${diffDinero.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-slate-700">Diferencia porcentual:</span>
+          <span class="font-black text-rose-700 text-sm">${diffPct.toFixed(2)}%</span>
+        </div>
+        <p class="text-[11px] text-slate-500 pt-1 border-t border-slate-200 mt-1">${diffExpl}</p>
+      `;
+    }
 
     // Acciones de Desvinculación
     const actionsContainer = document.getElementById('modal-actions-container');
@@ -1154,21 +1170,23 @@ class PriceComparatorApp {
       actionsContainer.innerHTML = '';
       if (r.present_count > 1) {
         const unlinkBtn = document.createElement('button');
-        unlinkBtn.className = "bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition";
+        unlinkBtn.type = "button";
+        unlinkBtn.className = "bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition cursor-pointer";
         unlinkBtn.innerHTML = `<i data-lucide="split" class="w-4 h-4"></i> Separar este producto`;
         unlinkBtn.onclick = () => this.unlinkAndCloseModal(r.group_id);
         actionsContainer.appendChild(unlinkBtn);
       }
       if (r.es_dudoso) {
         const confirmBtn = document.createElement('button');
-        confirmBtn.className = "bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition";
+        confirmBtn.type = "button";
+        confirmBtn.className = "bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition cursor-pointer";
         confirmBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Confirmar como mismo artículo`;
         confirmBtn.onclick = () => this.confirmAndCloseModal(r.group_id);
         actionsContainer.appendChild(confirmBtn);
       }
     }
 
-    document.getElementById('product-detail-modal').classList.remove('hidden');
+    modal.classList.remove('hidden');
     lucide.createIcons();
   }
 
