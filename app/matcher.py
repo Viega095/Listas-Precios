@@ -109,11 +109,68 @@ class ProductMatcher:
                 for it in cand_items:
                     assigned_ids.add(it['id'])
 
-        # 4. Matching Difuso (Fuzzy Matching)
+        # 4. Matching Difuso (Fuzzy Matching e integración en grupos existentes)
         for item in all_items:
             if item['id'] in assigned_ids:
                 continue
                 
+            l_key = f"item_l{item['list_index']+1}"
+            best_existing_group = None
+            best_existing_score = 0.0
+            
+            # 4.1. Intentar incorporar este item a un grupo ya creado que tenga este slot de lista libre
+            for g in groups:
+                if g[l_key] is not None:
+                    continue
+                
+                # Obtener los items presentes en este grupo
+                grp_items = [g[k] for k in ('item_l1', 'item_l2', 'item_l3') if g.get(k) is not None]
+                if not grp_items:
+                    continue
+                
+                # Validar compatibilidad de medida y marca con los miembros del grupo
+                compatible = True
+                scores = []
+                for gi in grp_items:
+                    if item['measure_key'] and gi['measure_key'] and item['measure_key'] != gi['measure_key']:
+                        compatible = False
+                        break
+                    if item['unit_type'] and gi['unit_type'] and item['unit_type'] != gi['unit_type']:
+                        compatible = False
+                        break
+                    if item['clean_brand'] and gi['clean_brand'] and len(item['clean_brand']) > 2 and len(gi['clean_brand']) > 2:
+                        brand_match = (
+                            item['clean_brand'] == gi['clean_brand'] or
+                            item['clean_brand'] in gi['clean_brand'] or
+                            gi['clean_brand'] in item['clean_brand'] or
+                            fuzz.token_set_ratio(item['clean_brand'], gi['clean_brand']) >= 75
+                        )
+                        if not brand_match:
+                            compatible = False
+                            break
+                    
+                    s1 = fuzz.token_sort_ratio(item['normalized_title'], gi['normalized_title'])
+                    s2 = fuzz.token_set_ratio(item['normalized_title'], gi['normalized_title'])
+                    score_i = (s1 * 0.6) + (s2 * 0.4)
+                    scores.append(score_i)
+                
+                if compatible and scores:
+                    avg_s = sum(scores) / len(scores)
+                    if avg_s >= similarity_threshold and avg_s > best_existing_score:
+                        best_existing_score = avg_s
+                        best_existing_group = g
+            
+            if best_existing_group and best_existing_score >= similarity_threshold:
+                # Incorporar item al grupo existente
+                best_existing_group[l_key] = item
+                present_cnt = sum(1 for k in ('item_l1', 'item_l2', 'item_l3') if best_existing_group.get(k) is not None)
+                best_existing_group['present_count'] = present_cnt
+                if best_existing_group['match_status'] != 'dudoso':
+                    best_existing_group['match_status'] = "en_3_listas" if present_cnt == 3 else "en_2_listas"
+                assigned_ids.add(item['id'])
+                continue
+
+            # 4.2. Buscar coincidencia difusa entre items restantes no asignados
             best_candidates = [item]
             
             for other_l_idx in range(self.num_lists):
@@ -135,7 +192,13 @@ class ProductMatcher:
                         continue
 
                     if item['clean_brand'] and other_item['clean_brand'] and len(item['clean_brand']) > 2 and len(other_item['clean_brand']) > 2:
-                        if item['clean_brand'] != other_item['clean_brand'] and fuzz.ratio(item['clean_brand'], other_item['clean_brand']) < 80:
+                        brand_match = (
+                            item['clean_brand'] == other_item['clean_brand'] or
+                            item['clean_brand'] in other_item['clean_brand'] or
+                            other_item['clean_brand'] in item['clean_brand'] or
+                            fuzz.token_set_ratio(item['clean_brand'], other_item['clean_brand']) >= 75
+                        )
+                        if not brand_match:
                             continue
 
                     score1 = fuzz.token_sort_ratio(item['normalized_title'], other_item['normalized_title'])

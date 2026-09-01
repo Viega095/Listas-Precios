@@ -4,7 +4,7 @@ from typing import Dict, Any, Tuple, Optional
 
 # Mapeos y patrones de unidades
 RE_VOLUME = re.compile(
-    r'(?P<val>\d+(?:[\.,]\d+)?)\s*(?P<unit>l(?:itro(?:s)?)?|ml|c\.?c\.?|cm3|cl)\b', 
+    r'(?P<val>\d+(?:[\.,]\d+)?)\s*(?P<unit>l(?:itro(?:s)?)?|lts?|ml|c\.?c\.?|cm3|cl)\b', 
     re.IGNORECASE
 )
 RE_WEIGHT = re.compile(
@@ -20,7 +20,24 @@ RE_PACK = re.compile(
 STOP_WORDS = {
     'de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'unos', 'unas', 'y', 'e', 'o', 'u',
     'con', 'sin', 'para', 'en', 'por', 'a', 'al', 'original', 'clasica', 'clasico', 'premium',
-    'promo', 'oferta', 'nuevo', 'super', 'pack'
+    'promo', 'oferta', 'nuevo', 'super', 'pack', 'x'
+}
+
+# Diccionario de equivalencias y lematización para el mercado argentino y mascotas
+SYNONYM_REPLACEMENTS = {
+    'gatos': 'gato', 'gatitos': 'gatito', 'kitten': 'gatito', 'kittens': 'gatito',
+    'perros': 'perro', 'dog': 'perro', 'dogs': 'perro', 'cat': 'gato', 'cats': 'gato',
+    'cachorros': 'cachorro', 'puppy': 'cachorro', 'puppies': 'cachorro',
+    'adultos': 'adulto', 'adult': 'adulto', 'seniors': 'senior',
+    'medianos': 'mediano', 'medianas': 'mediano', 'medium': 'mediano', 'med': 'mediano',
+    'pequenos': 'pequeno', 'pequenas': 'pequeno', 'small': 'pequeno', 'mini': 'pequeno', 'peq': 'pequeno',
+    'grandes': 'grande', 'maxi': 'grande', 'large': 'grande', 'gde': 'grande',
+    'razas': 'raza', 'breed': 'raza', 'proplan': 'pro plan',
+    'litros': 'l', 'litro': 'l', 'lts': 'l', 'lt': 'l',
+    'kilos': 'kg', 'kilo': 'kg', 'gr': 'g', 'gramos': 'g', 'gramo': 'g',
+    'descremada': 'descremado', 'entera': 'entero',
+    'sachet': 'sachet', 'tetra': 'tetra', 'brik': 'tetra', 'tetrabrik': 'tetra',
+    'doypack': 'doypack', 'doy': 'doypack', 'lata': 'lata', 'botella': 'botella'
 }
 
 def remove_accents_and_clean(text: str) -> str:
@@ -140,6 +157,46 @@ def extract_standard_measure(text: str) -> Tuple[Optional[str], Optional[float],
 
     return None, None, clean_t
 
+KNOWN_BRANDS = [
+    # Mascotas
+    "Royal Canin", "Purina Pro Plan", "Pro Plan", "Purina Dog Chow", "Dog Chow",
+    "Purina Cat Chow", "Cat Chow", "Pedigree", "Whiskas", "Eukanuba", "Excellent",
+    "Sieger", "Vitalcan", "Old Prince", "Nutribon", "Fawna", "Gati", "Raza",
+    "Infinity", "Voraz", "Mon Ami", "Sabrositos",
+    # Lácteos y Bebidas
+    "La Serenísima", "La Serenisima", "Sancor", "Ilolay", "Tregar", "Milkaut", "Verónica",
+    "Coca-Cola", "Coca Cola", "Sprite", "Fanta", "Pepsi", "Seven Up", "7Up", "Quilmes",
+    "Stella Artois", "Heineken", "Brahma", "Corona", "Villavicencio", "Villa del Sur",
+    "Levité", "Levite", "Cepita", "Baggio",
+    # Almacén
+    "Matarazzo", "Lucchetti", "Gallo", "Natura", "Cocinero", "Hellmanns", "Hellmann's",
+    "Marolio", "Arcor", "Terrabusi", "Bagley", "San Ignacio", "Molto", "Knorr",
+    "La Campagnola", "Canale", "Noel", "Pureza", "Cañuelas", "Favorita",
+    # Perfumería y Limpieza
+    "Head & Shoulders", "Pantene", "Sedal", "Dove", "Rexona", "Colgate", "Oral-B",
+    "Ariel", "Ala", "Skip", "Drive", "Ayudín", "Ayudin", "Magistral", "Cif", "Vivere",
+    "Comfort", "Poett", "Glade", "Huggies", "Pampers"
+]
+
+BRAND_CANONICAL_MAP = {
+    'pro plan': 'Purina Pro Plan',
+    'purina pro plan': 'Purina Pro Plan',
+    'dog chow': 'Purina Dog Chow',
+    'purina dog chow': 'Purina Dog Chow',
+    'cat chow': 'Purina Cat Chow',
+    'purina cat chow': 'Purina Cat Chow',
+    'coca cola': 'Coca-Cola',
+    'coca-cola': 'Coca-Cola',
+    'la serenisima': 'La Serenísima',
+    'serenisima': 'La Serenísima',
+    'la campagnola': 'La Campagnola',
+    'campagnola': 'La Campagnola',
+    'san ignacio': 'San Ignacio',
+    'head and shoulders': 'Head & Shoulders',
+    'head & shoulders': 'Head & Shoulders',
+    'h&s': 'Head & Shoulders'
+}
+
 def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_number: int) -> Dict[str, Any]:
     """
     Normaliza una fila completa de producto para permitir indexación y comparación precisa.
@@ -152,14 +209,26 @@ def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_numb
     presentacion = str(row_dict.get('presentacion', '') or '').strip()
     unidad = str(row_dict.get('unidad', '') or '').strip()
     
-    # Inferir marca si viene vacía a partir del nombre del producto
+    # Inferir marca en cualquier posición del texto
     if not marca and descripcion:
-        words = [w for w in descripcion.split() if len(w) > 2]
-        if words:
-            if len(words) >= 2 and words[0].lower() in ('royal', 'la', 'los', 'las', 'san', 'pro', 'dog', 'cat', 'coca', 'dr', 'head'):
-                marca = f"{words[0]} {words[1]}".title()
-            else:
-                marca = words[0].title()
+        desc_clean = f" {remove_accents_and_clean(descripcion)} "
+        for kb in KNOWN_BRANDS:
+            kb_clean = f" {remove_accents_and_clean(kb)} "
+            if kb_clean in desc_clean:
+                marca = kb
+                break
+                
+        if not marca:
+            words = [w for w in descripcion.split() if len(w) > 2]
+            if words:
+                if len(words) >= 2 and words[0].lower() in ('royal', 'la', 'los', 'las', 'san', 'pro', 'dog', 'cat', 'coca', 'dr', 'head'):
+                    marca = f"{words[0]} {words[1]}".title()
+                else:
+                    marca = words[0].title()
+
+    clean_marca_key = remove_accents_and_clean(marca)
+    if clean_marca_key in BRAND_CANONICAL_MAP:
+        marca = BRAND_CANONICAL_MAP[clean_marca_key]
     
     # Precios y cantidades
     precio_raw = row_dict.get('precio', '')
@@ -178,10 +247,19 @@ def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_numb
     full_desc = f"{descripcion} {presentacion} {unidad}".strip()
     unit_type, unit_value, cleaned_desc = extract_standard_measure(full_desc)
     
-    # Generar tokens limpios de la descripción
+    # Generar tokens limpios y lematizados de la descripción
     cleaned_text = remove_accents_and_clean(cleaned_desc)
-    tokens = [t for t in cleaned_text.split() if t not in STOP_WORDS and len(t) > 1]
-    tokens_sorted = " ".join(sorted(tokens))
+    raw_tokens = [t for t in cleaned_text.split() if t not in STOP_WORDS and len(t) > 1]
+    canonical_tokens = [SYNONYM_REPLACEMENTS.get(t, t) for t in raw_tokens]
+    # Si algún reemplazo trajo 2 palabras (ej: 'proplan' -> 'pro plan')
+    flat_tokens = []
+    for ct in canonical_tokens:
+        for sub_t in ct.split():
+            if sub_t not in STOP_WORDS and len(sub_t) > 1:
+                flat_tokens.append(sub_t)
+                
+    tokens = flat_tokens
+    tokens_sorted = " ".join(sorted(set(tokens)))
     
     # Clave de medida estandarizada (ej: '2250ml', '1000g', '6u' o vacía)
     measure_key = f"{int(unit_value)}{unit_type}" if unit_type and unit_value else ""
