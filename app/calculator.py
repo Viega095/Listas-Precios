@@ -253,7 +253,27 @@ class PriceCalculator:
                 "mas_baratos_comparables": cheapest_counts.get(l_idx, 0)
             }
 
-        # 6. Diferencia total en dinero entre las tres listas (max total general - min total general)
+        # 6. Variación y Movimiento de Precios entre Listas
+        count_aumentos = 0
+        count_rebajas = 0
+        count_iguales = 0
+
+        for r in comparable_rows:
+            p1 = r.get('precio_l1')
+            p2 = r.get('precio_l2')
+            if p1 is not None and p2 is not None:
+                if p2 > p1 + 0.01:
+                    count_aumentos += 1
+                elif p2 < p1 - 0.01:
+                    count_rebajas += 1
+                else:
+                    count_iguales += 1
+
+        tot_l1 = totales_generales.get(0, 0.0)
+        tot_l2 = totales_generales.get(1, 0.0)
+        variacion_monto_l2_vs_l1 = round(tot_l2 - tot_l1, 2)
+        variacion_pct_l2_vs_l1 = round(((tot_l2 - tot_l1) / tot_l1) * 100.0, 2) if tot_l1 > 0 else 0.0
+
         valid_totales = [t for t in totales_generales.values() if t > 0]
         diferencia_total_listas = round(max(valid_totales) - min(valid_totales), 2) if valid_totales else 0.0
 
@@ -276,6 +296,11 @@ class PriceCalculator:
             "total_productos_exclusivos": sum(exclusive_counts.values()),
             "total_precios_iguales": equal_prices_count,
             "total_sin_precio_valido": invalid_prices_count,
+            "count_aumentos": count_aumentos,
+            "count_rebajas": count_rebajas,
+            "count_iguales": count_iguales,
+            "variacion_monto_l2_vs_l1": variacion_monto_l2_vs_l1,
+            "variacion_pct_l2_vs_l1": variacion_pct_l2_vs_l1,
             "totales_generales": totales_generales,
             "totales_comparables": totales_comparables,
             "total_compra_optima": total_compra_optima,

@@ -280,79 +280,85 @@
       </div>
 
       <!-- ========================================== -->
-      <!-- RESUMEN FINAL: TOTALES Y AHORRO GLOBAL     -->
+      <!-- RESUMEN FINAL: TOTALES Y VARIACIÓN GENERAL -->
       <!-- ========================================== -->
-      <div class="mt-10 pt-8 border-t-2 border-slate-200 space-y-6">
+      <div class="mt-10 pt-8 border-t-2 border-slate-300 space-y-6">
         
-        <div class="flex items-center gap-2">
-          <span class="text-xl">📊</span>
-          <h3 class="text-base font-extrabold text-slate-900 tracking-tight">Totales de Compra y Ahorro Global Posible</h3>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">📊</span>
+            <h3 class="text-base font-black text-slate-900 tracking-tight">Resumen General de Comparación</h3>
+          </div>
+          <span class="text-xs font-semibold text-slate-500" id="txt-diferencia-total-listas"></span>
         </div>
 
-        <!-- Tarjetas KPI de Totales -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="kpi-cards-container">
-          <!-- Tarjeta 1: Canasta Óptima -->
-          <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-5 rounded-xl shadow-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold uppercase tracking-wider text-emerald-100">Canasta Óptima (Mejor Precio)</span>
-              <i data-lucide="badge-dollar-sign" class="w-5 h-5 text-emerald-200"></i>
-            </div>
-            <p class="text-2xl font-black mt-2" id="kpi-total-optimo">$0.00</p>
-            <p class="text-xs text-emerald-100 mt-1" id="kpi-total-optimo-sub">Comprando cada producto a quien lo tenga más barato</p>
-          </div>
-
-          <!-- Tarjeta 2: Ahorro Máximo -->
-          <div class="bg-gradient-to-br from-sky-600 to-blue-700 text-white p-5 rounded-xl shadow-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold uppercase tracking-wider text-sky-100">Ahorro Máximo Posible</span>
-              <i data-lucide="trending-down" class="w-5 h-5 text-sky-200"></i>
-            </div>
-            <p class="text-2xl font-black mt-2" id="kpi-max-ahorro">$0.00</p>
-            <p class="text-xs text-sky-100 mt-1" id="kpi-max-ahorro-pct">0.00% de ahorro potencial</p>
-          </div>
-
-          <!-- Tarjeta 3: Total Productos Procesados -->
-          <div class="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
+        <!-- Tarjetas Claras de Totales y Variación -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="kpi-cards-container">
+          
+          <!-- Tarjeta 1: Total Lista 1 -->
+          <div class="bg-white border border-slate-300 p-5 rounded-xl shadow-xs">
             <div class="flex items-center justify-between text-slate-500">
-              <span class="text-xs font-semibold uppercase tracking-wider">Productos Analizados</span>
-              <i data-lucide="layers" class="w-5 h-5 text-slate-400"></i>
+              <span class="text-[11px] font-extrabold uppercase tracking-wider truncate" id="kpi-title-l1">Total Lista 1</span>
+              <i data-lucide="file-text" class="w-4 h-4 text-sky-600"></i>
             </div>
-            <p class="text-2xl font-black text-slate-800 mt-2" id="kpi-total-items">0</p>
-            <p class="text-xs text-slate-500 mt-1" id="kpi-items-detail">100% de productos sin omisiones</p>
+            <p class="text-2xl font-black text-slate-900 mt-2" id="kpi-total-l1">$0.00</p>
+            <p class="text-xs text-slate-500 mt-1" id="kpi-sub-l1">Suma del catálogo completo</p>
           </div>
+
+          <!-- Tarjeta 2: Total Lista 2 -->
+          <div class="bg-white border border-slate-300 p-5 rounded-xl shadow-xs">
+            <div class="flex items-center justify-between text-slate-500">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider truncate" id="kpi-title-l2">Total Lista 2</span>
+              <i data-lucide="file-text" class="w-4 h-4 text-indigo-600"></i>
+            </div>
+            <p class="text-2xl font-black text-slate-900 mt-2" id="kpi-total-l2">$0.00</p>
+            <p class="text-xs text-slate-500 mt-1" id="kpi-sub-l2">Suma del catálogo completo</p>
+          </div>
+
+          <!-- Tarjeta 3: Variación General (Aumento o Rebaja) -->
+          <div class="bg-white border border-slate-300 p-5 rounded-xl shadow-xs" id="kpi-card-variacion">
+            <div class="flex items-center justify-between text-slate-500">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider">Variación General</span>
+              <i data-lucide="trending-up" class="w-4 h-4 text-rose-600" id="kpi-icon-variacion"></i>
+            </div>
+            <p class="text-2xl font-black text-rose-700 mt-2" id="kpi-variacion-monto">+$0.00</p>
+            <p class="text-xs font-bold text-rose-700 mt-1" id="kpi-variacion-pct">+0.00% de aumento global</p>
+          </div>
+
+          <!-- Tarjeta 4: Resumen de Movimientos -->
+          <div class="bg-white border border-slate-300 p-5 rounded-xl shadow-xs">
+            <div class="flex items-center justify-between text-slate-500">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider">Movimiento de Precios</span>
+              <i data-lucide="activity" class="w-4 h-4 text-slate-600"></i>
+            </div>
+            <div class="mt-2 space-y-1 text-xs font-bold" id="kpi-movimientos-container">
+              <div class="text-rose-700 flex items-center justify-between"><span>🔺 Subieron:</span> <span id="kpi-count-aumentos">0</span></div>
+              <div class="text-emerald-700 flex items-center justify-between"><span>🔻 Bajaron:</span> <span id="kpi-count-rebajas">0</span></div>
+              <div class="text-slate-600 flex items-center justify-between"><span>🟢 Mismo precio:</span> <span id="kpi-count-iguales">0</span></div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Tarjeta de Recomendación y Plan Óptimo -->
-        <div class="bg-gradient-to-r from-amber-50 via-orange-50/40 to-amber-50 border border-amber-200 rounded-xl p-5 shadow-sm">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-lg">💡</span>
-            <h3 class="font-bold text-slate-900 text-sm">Resumen Ejecutivo y Sugerencia de Compra</h3>
-          </div>
-          <div id="text-executive-advice" class="text-xs text-slate-700 space-y-2">
-            <!-- Generado dinámicamente -->
-          </div>
-        </div>
-
-        <!-- Tabla Financiera Comparativa de Totales -->
-        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-3">
-          <div class="flex items-center justify-between">
-            <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Comparativa de Totales por Lista</h4>
-            <span class="text-xs text-slate-500" id="txt-diferencia-total-listas">Diferencia total: $0.00</span>
+        <!-- Tabla Financiera Comparativa de Listas -->
+        <div class="bg-white rounded-xl border border-slate-300 shadow-sm overflow-hidden">
+          <div class="bg-slate-100/90 px-4 py-3 border-b border-slate-300">
+            <h4 class="font-black text-slate-900 text-xs uppercase tracking-wider">Comparativa de Totales por Lista de Precios</h4>
           </div>
 
           <div class="overflow-x-auto">
             <table class="w-full text-xs text-left">
-              <thead class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+              <thead class="bg-slate-50 text-slate-700 font-bold border-b border-slate-300 uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th class="py-2.5 px-3">Lista / Escenario</th>
-                  <th class="py-2.5 px-3 text-right">Total General</th>
-                  <th class="py-2.5 px-3 text-right text-emerald-700">Ahorro Posible ($)</th>
-                  <th class="py-2.5 px-3 text-right text-emerald-700">Ahorro (%)</th>
-                  <th class="py-2.5 px-3 text-center">Prod. Más Baratos</th>
-                  <th class="py-2.5 px-3 text-center">Exclusivos</th>
+                  <th class="py-3 px-4">Lista / Proveedor</th>
+                  <th class="py-3 px-4 text-right">Total General</th>
+                  <th class="py-3 px-4 text-right">Diferencia vs Lista 1 ($)</th>
+                  <th class="py-3 px-4 text-right">Variación (%)</th>
+                  <th class="py-3 px-4 text-center">Artículos Más Baratos</th>
+                  <th class="py-3 px-4 text-center">Artículos Exclusivos</th>
                 </tr>
               </thead>
-              <tbody id="tbody-summary-providers" class="divide-y divide-slate-100">
+              <tbody id="tbody-summary-providers" class="divide-y divide-slate-200 font-medium">
                 <!-- Filas dinámicas -->
               </tbody>
             </table>

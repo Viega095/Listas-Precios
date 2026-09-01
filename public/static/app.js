@@ -639,87 +639,63 @@ class PriceComparatorApp {
   renderResultsDashboard() {
     if (!this.comparisonResult) return;
     const totals = this.comparisonResult.totals;
+    const numFiles = Object.keys(this.uploadedFiles).length;
 
-    // KPI Cards
-    const elOptimo = document.getElementById('kpi-total-optimo');
-    if (elOptimo) elOptimo.innerText = `$${totals.total_optimo_comparables.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
-    
-    const subOpt = document.getElementById('kpi-total-optimo-sub');
-    if (subOpt) {
-      subOpt.innerText = `Catálogo total (con exclusivos): $${totals.total_compra_optima.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
-    }
-    
-    // Ahorro Máximo
-    let maxAhorro = 0;
-    let maxAhorroPct = 0;
-    Object.values(totals.ahorros || {}).forEach(a => {
-      if (a.ahorro_dinero > maxAhorro) {
-        maxAhorro = a.ahorro_dinero;
-        maxAhorroPct = a.ahorro_porcentaje;
+    const totL1 = totals.totales_generales?.[0] || 0;
+    const totL2 = totals.totales_generales?.[1] || 0;
+
+    // Tarjeta 1: Total Lista 1
+    const elTitleL1 = document.getElementById('kpi-title-l1');
+    if (elTitleL1) elTitleL1.innerText = `Total ${this.configs[0]?.nombre || 'Lista 1'}`;
+    const elTotL1 = document.getElementById('kpi-total-l1');
+    if (elTotL1) elTotL1.innerText = `$${totL1.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+
+    // Tarjeta 2: Total Lista 2
+    const elTitleL2 = document.getElementById('kpi-title-l2');
+    if (elTitleL2) elTitleL2.innerText = `Total ${this.configs[1]?.nombre || 'Lista 2'}`;
+    const elTotL2 = document.getElementById('kpi-total-l2');
+    if (elTotL2) elTotL2.innerText = `$${totL2.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+
+    // Tarjeta 3: Variación General (Aumento o Rebaja)
+    const elVarMonto = document.getElementById('kpi-variacion-monto');
+    const elVarPct = document.getElementById('kpi-variacion-pct');
+    const elIconVar = document.getElementById('kpi-icon-variacion');
+    const elCardVar = document.getElementById('kpi-card-variacion');
+
+    const diffMonto = totals.variacion_monto_l2_vs_l1 ?? (totL2 - totL1);
+    const diffPct = totals.variacion_pct_l2_vs_l1 ?? (totL1 > 0 ? ((totL2 - totL1) / totL1) * 100 : 0);
+
+    if (elVarMonto && elVarPct) {
+      if (diffMonto > 0.01) {
+        elVarMonto.className = "text-2xl font-black text-rose-700 mt-2";
+        elVarMonto.innerText = `+$${diffMonto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+        elVarPct.className = "text-xs font-bold text-rose-700 mt-1";
+        elVarPct.innerText = `🔺 +${diffPct.toFixed(2)}% de aumento general`;
+      } else if (diffMonto < -0.01) {
+        elVarMonto.className = "text-2xl font-black text-emerald-700 mt-2";
+        elVarMonto.innerText = `-$${Math.abs(diffMonto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+        elVarPct.className = "text-xs font-bold text-emerald-700 mt-1";
+        elVarPct.innerText = `🔻 -${Math.abs(diffPct).toFixed(2)}% de disminución general`;
+      } else {
+        elVarMonto.className = "text-2xl font-black text-slate-800 mt-2";
+        elVarMonto.innerText = `$0.00`;
+        elVarPct.className = "text-xs font-bold text-slate-600 mt-1";
+        elVarPct.innerText = `🟢 0.00% sin variación global`;
       }
-    });
-    
-    const elMaxAhorro = document.getElementById('kpi-max-ahorro');
-    if (elMaxAhorro) elMaxAhorro.innerText = `$${maxAhorro.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
-    
-    const elMaxAhorroPct = document.getElementById('kpi-max-ahorro-pct');
-    if (elMaxAhorroPct) elMaxAhorroPct.innerText = `${maxAhorroPct.toFixed(2)}% de ahorro potencial máximo`;
-
-    const elTotalItems = document.getElementById('kpi-total-items');
-    if (elTotalItems) elTotalItems.innerText = totals.total_productos_comparados.toLocaleString();
-    
-    const elItemsDetail = document.getElementById('kpi-items-detail');
-    if (elItemsDetail) elItemsDetail.innerText = `${totals.total_productos_comparables.toLocaleString()} comparables | ${totals.total_productos_exclusivos.toLocaleString()} exclusivos`;
-
-    // Generar Consejo Ejecutivo Directo (Explicación para humanos)
-    const adviceBox = document.getElementById('text-executive-advice');
-    if (adviceBox) {
-      let bestProvIdx = 0;
-      let maxCheapestCount = -1;
-      [0, 1, 2].forEach(idx => {
-        if (this.uploadedFiles[idx]) {
-          const count = totals.conteo_mas_baratos[idx] || 0;
-          if (count > maxCheapestCount) {
-            maxCheapestCount = count;
-            bestProvIdx = idx;
-          }
-        }
-      });
-
-      const bestProvName = this.configs[bestProvIdx]?.nombre || `Proveedor ${bestProvIdx + 1}`;
-      const totalComp = totals.total_productos_comparables || 1;
-      const bestProvPct = ((maxCheapestCount / totalComp) * 100).toFixed(1);
-
-      adviceBox.innerHTML = `
-        <div class="space-y-3">
-          <div class="flex items-start gap-2">
-            <span class="font-bold text-slate-900 text-sm">🏆 Opción 1 Solo Proveedor:</span>
-            <span class="text-xs text-slate-700">Si preferís hacer un solo pedido para ahorrar tiempo, <b>${bestProvName}</b> es tu opción más conveniente (gana en el <b>${bestProvPct}%</b> de los artículos comparables).</span>
-          </div>
-          <div class="flex items-start gap-2">
-            <span class="font-bold text-emerald-900 text-sm">💰 Canasta Óptima Sugerida:</span>
-            <span class="text-xs text-emerald-950">Comprándole a cada proveedor sus productos más baratos, ahorrás hasta <b>$${maxAhorro.toLocaleString('es-AR', {minimumFractionDigits: 2})}</b> (${maxAhorroPct.toFixed(2)}%).</span>
-          </div>
-        </div>
-      `;
     }
 
-    // Ganadores en KPI (si existe el contenedor)
-    const leadersContainer = document.getElementById('kpi-cheapest-leaders');
-    if (leadersContainer) {
-      leadersContainer.innerHTML = '';
-      [0, 1, 2].forEach(idx => {
-        if (this.uploadedFiles[idx]) {
-          const count = totals.conteo_mas_baratos[idx] || 0;
-          leadersContainer.innerHTML += `<div><b>${this.configs[idx].nombre}:</b> ${count.toLocaleString()} más baratos</div>`;
-        }
-      });
-    }
+    // Tarjeta 4: Movimiento de Precios
+    const elCountAumentos = document.getElementById('kpi-count-aumentos');
+    if (elCountAumentos) elCountAumentos.innerText = (totals.count_aumentos || 0).toLocaleString();
+    const elCountRebajas = document.getElementById('kpi-count-rebajas');
+    if (elCountRebajas) elCountRebajas.innerText = (totals.count_rebajas || 0).toLocaleString();
+    const elCountIguales = document.getElementById('kpi-count-iguales');
+    if (elCountIguales) elCountIguales.innerText = (totals.count_iguales || 0).toLocaleString();
 
     // Tabla de resumen de proveedores
     const diffTotalEl = document.getElementById('txt-diferencia-total-listas');
     if (diffTotalEl) {
-      diffTotalEl.innerText = `Diferencia total monetaria entre listas: $${totals.diferencia_total_listas.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+      diffTotalEl.innerText = `Diferencia entre listas: $${Math.abs(diffMonto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
     }
     
     const tbodyProv = document.getElementById('tbody-summary-providers');
@@ -728,36 +704,40 @@ class PriceComparatorApp {
 
       [0, 1, 2].forEach(idx => {
         if (this.uploadedFiles[idx]) {
-          const totC = totals.totales_comparables[idx] || 0;
           const totG = totals.totales_generales[idx] || 0;
-          const ah = totals.ahorros[idx] || {};
           const cntB = totals.conteo_mas_baratos[idx] || 0;
           const cntE = totals.conteo_exclusivos[idx] || 0;
 
+          let diffVsL1Str = '-';
+          let pctVsL1Str = '<span class="text-slate-400 font-normal">Base de referencia</span>';
+
+          if (idx > 0 && totL1 > 0) {
+            const d = totG - totL1;
+            const p = (d / totL1) * 100;
+            if (d > 0.01) {
+              diffVsL1Str = `<span class="text-rose-700 font-bold">+$${d.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>`;
+              pctVsL1Str = `<span class="text-rose-700 font-bold">🔺 +${p.toFixed(2)}%</span>`;
+            } else if (d < -0.01) {
+              diffVsL1Str = `<span class="text-emerald-700 font-bold">-$${Math.abs(d).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>`;
+              pctVsL1Str = `<span class="text-emerald-700 font-bold">🔻 -${Math.abs(p).toFixed(2)}%</span>`;
+            } else {
+              diffVsL1Str = `<span class="text-slate-600 font-bold">$0.00</span>`;
+              pctVsL1Str = `<span class="text-slate-600 font-bold">0.00%</span>`;
+            }
+          }
+
           tbodyProv.innerHTML += `
-            <tr class="hover:bg-slate-50">
-              <td class="py-2.5 px-3 font-semibold text-slate-800">${this.configs[idx].nombre}</td>
-              <td class="py-2.5 px-3 text-right font-medium">$${totG.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-              <td class="py-2.5 px-3 text-right text-emerald-700 font-bold">$${(ah.ahorro_dinero || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-              <td class="py-2.5 px-3 text-right text-emerald-700 font-bold">${(ah.ahorro_porcentaje || 0).toFixed(2)}%</td>
-              <td class="py-2.5 px-3 text-center">${cntB}</td>
-              <td class="py-2.5 px-3 text-center">${cntE}</td>
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="py-3 px-4 font-bold text-slate-900">${this.configs[idx].nombre}</td>
+              <td class="py-3 px-4 text-right font-extrabold text-slate-900">$${totG.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+              <td class="py-3 px-4 text-right font-medium">${diffVsL1Str}</td>
+              <td class="py-3 px-4 text-right font-medium">${pctVsL1Str}</td>
+              <td class="py-3 px-4 text-center font-bold text-emerald-800">${cntB}</td>
+              <td class="py-3 px-4 text-center font-semibold text-slate-600">${cntE}</td>
             </tr>
           `;
         }
       });
-
-      // Fila Canasta Óptima
-      tbodyProv.innerHTML += `
-        <tr class="bg-emerald-50 text-emerald-950 font-bold">
-          <td class="py-2.5 px-3 flex items-center gap-1.5"><i data-lucide="sparkles" class="w-4 h-4 text-emerald-600"></i> CANASTA ÓPTIMA</td>
-          <td class="py-2.5 px-3 text-right">$${totals.total_compra_optima.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-          <td class="py-2.5 px-3 text-right">-</td>
-          <td class="py-2.5 px-3 text-right">-</td>
-          <td class="py-2.5 px-3 text-center">Todos los ítems</td>
-          <td class="py-2.5 px-3 text-center">-</td>
-        </tr>
-      `;
     }
 
     this.renderBrandsView();
