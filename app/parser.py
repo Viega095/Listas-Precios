@@ -244,141 +244,208 @@ def parse_file_to_dataframe(file_bytes: bytes, filename: str) -> Tuple[pd.DataFr
 
 def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
     """
-    Extrae texto estructurado y tablas de un PDF usando pypdf con reconstrucción de coordenadas (X, Y)
-    para alinear perfectamente tablas con múltiples columnas, pesos y precios.
+    Extrae tablas y texto estructurado de un archivo PDF usando motores de alta fidelidad:
+    1. pdfplumber: Extracción precisa de tablas estructuradas (detecta bordes y alineaciones de columnas).
+    2. pymupdf: Detección de bloques de texto y tablas por coordenadas visuales.
+    3. Segmentación continua por patrones de precio para PDFs que emiten texto en flujo único.
     """
-    from pypdf import PdfReader
+    rows = []
     
-    reader = PdfReader(io.BytesIO(file_bytes))
-    all_lines = []
-    
-    # 1. Extraer líneas agrupadas por coordenadas visuales Y (mismo renglón horizontal)
-    for page_idx, page in enumerate(reader.pages):
-        words_with_pos = []
+    # ESTRATEGIA 1: pdfplumber para tablas tabulares (detecta tablas como la de Lista 2)
+    try:
+        import pdfplumber
+        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+            for page in pdf.pages:
+                tables = page.extract_tables()
+                if tables:
+                    for table in tables:
+                        for r in table:
+                            if not r:
+                                continue
+                            cells = [str(c).strip() for c in r if c is not None and str(c).strip()]
+                            if len(cells) < 2:
+                                continue
+                            joined = ' '.join(cells).lower()
+                            if ('código' in joined or 'codigo' in joined) and ('precio' in joined or 'venta' in joined):
+                                continue
+                            if 'página' in joined or 'pagina' in joined or 'page' in joined:
+                                continue
+                                
+                            # Buscar celda de precio
+                            price_val = None
+                            price_idx = -1
+                            for idx in reversed(range(len(cells))):
+                                pv = parse_price(cells[idx])
+                                if pv >= 50 and pv < 50_000_000:
+                                    price_val = pv
+                                    price_idx = idx
+                                    break
+                                    
+                            if price_val is not None:
+                                non_price = [cells[j] for j in range(len(cells)) if j != price_idx]
+                                if not non_price:
+                                    continue
+                                if len(non_price) >= 2:
+                                    try:
+                                        _ = float(non_price[-1].replace(',', '.'))
+                                        non_price = non_price[:-1]
+                                    except ValueError:
+                                        pass
+                                code = ""
+                                if len(non_price) >= 2:
+                                    first_c = non_price[0]
+                                    if first_c.isdigit() or re.match(r'^[A-Za-z]{1,5}\d{2,8}$', first_c):
+                                        code = first_c
+                                        desc = ' '.join(non_price[1:])
+                                    else:
+                                        desc = ' '.join(non_price)
+                                else:
+                                    desc = non_price[0]
+                                    
+                                if desc and any(c.isalpha() for c in desc):
+                                    rows.append({
+                                        'Codigo': code,
+                                        'Detalle_Producto': desc,
+                                        'Precio': str(price_val)
+                                    })
+    except Exception:
+        pass
         
-        def visitor_body(text, cm, tm, font_dict, font_size):
-            if text and text.strip():
-                # tm[4] = coordenada X, tm[5] = coordenada Y
-                x = tm[4]
-                y = tm[5]
-                words_with_pos.append((y, x, text))
-                
-        try:
-            page.extract_text(visitor_text=visitor_body)
-        except Exception:
-            words_with_pos = []
-            
-        if words_with_pos:
-            # Ordenar de arriba hacia abajo (Y descendente) y de izquierda a derecha (X ascendente)
-            words_with_pos.sort(key=lambda item: (-item[0], item[1]))
-            current_line = []
-            current_y = None
-            
-            for y, x, text in words_with_pos:
-                if current_y is None or abs(y - current_y) <= 4:
-                    current_line.append((x, text))
-                    if current_y is None:
-                        current_y = y
-                else:
-                    current_line.sort(key=lambda it: it[0])
-                    line_str = ' '.join(it[1].strip() for it in current_line).strip()
-                    if line_str:
-                        all_lines.append(line_str)
-                    current_line = [(x, text)]
-                    current_y = y
-                    
-            if current_line:
-                current_line.sort(key=lambda it: it[0])
-                line_str = ' '.join(it[1].strip() for it in current_line).strip()
-                if line_str:
-                    all_lines.append(line_str)
-        else:
-            # Fallback a extracción tradicional de texto si no se pudo leer coordenadas
+    if rows and len(rows) >= 3:
+        return pd.DataFrame(rows)
+        
+    # ESTRATEGIA 2: PyMuPDF (pymupdf) para extracción de bloques y tablas visuales
+    try:
+        import pymupdf
+        doc = pymupdf.open(stream=file_bytes, filetype="pdf")
+        for page in doc:
             try:
-                txt = page.extract_text(extraction_mode="layout") or page.extract_text()
+                tabs = page.find_tables()
+                if tabs and len(tabs.tables) > 0:
+                    for tab in tabs:
+                        df_tab = tab.extract()
+                        for r in df_tab:
+                            if not r:
+                                continue
+                            cells = [str(c).strip() for c in r if c is not None and str(c).strip()]
+                            if len(cells) < 2:
+                                continue
+                            joined = ' '.join(cells).lower()
+                            if ('código' in joined or 'codigo' in joined) and ('precio' in joined or 'venta' in joined):
+                                continue
+                            price_val = None
+                            price_idx = -1
+                            for idx in reversed(range(len(cells))):
+                                pv = parse_price(cells[idx])
+                                if pv >= 50 and pv < 50_000_000:
+                                    price_val = pv
+                                    price_idx = idx
+                                    break
+                            if price_val is not None:
+                                non_price = [cells[j] for j in range(len(cells)) if j != price_idx]
+                                if not non_price:
+                                    continue
+                                if len(non_price) >= 2:
+                                    try:
+                                        _ = float(non_price[-1].replace(',', '.'))
+                                        non_price = non_price[:-1]
+                                    except ValueError:
+                                        pass
+                                code = ""
+                                if len(non_price) >= 2:
+                                    first_c = non_price[0]
+                                    if first_c.isdigit() or re.match(r'^[A-Za-z]{1,5}\d{2,8}$', first_c):
+                                        code = first_c
+                                        desc = ' '.join(non_price[1:])
+                                    else:
+                                        desc = ' '.join(non_price)
+                                else:
+                                    desc = non_price[0]
+                                if desc and any(c.isalpha() for c in desc):
+                                    rows.append({
+                                        'Codigo': code,
+                                        'Detalle_Producto': desc,
+                                        'Precio': str(price_val)
+                                    })
             except Exception:
-                txt = page.extract_text()
-            if txt:
-                for l in txt.splitlines():
-                    ls = l.strip()
-                    if ls:
-                        all_lines.append(ls)
-
-    if not all_lines:
-        raise ValueError("El archivo PDF no contiene texto extraíble o es un documento escaneado sin OCR.")
-
-    IGNORE_KEYWORDS = [
-        'pagina', 'página', 'page', 'código descripción', 'codigo descripcion', 
-        'lista de precio', 'tarifa', 'cuit', 'xxxxxx', 'total general', 'subtotal'
-    ]
-    
-    parsed_rows = []
-    
-    for l in all_lines:
-        line_clean = l.strip()
-        if not line_clean or len(line_clean) < 3:
-            continue
-            
-        line_lower = line_clean.lower()
-        if any(line_lower.startswith(k) for k in IGNORE_KEYWORDS):
-            continue
-        if ('código' in line_lower or 'codigo' in line_lower) and ('descripción' in line_lower or 'descripcion' in line_lower):
-            continue
-        if re.match(r'^[xX\s\-_=.]+$', line_clean):
-            continue
-            
-        # Tokenizar la fila
-        tokens = [t.strip() for t in re.split(r'\s+', line_clean) if t.strip()]
-        if len(tokens) < 2:
-            continue
-            
-        # El precio real en dinero es el último token válido de la fila
-        last_tok = tokens[-1].replace('$', '').strip()
-        price_val = parse_price(last_tok)
-        
-        # Validar que el precio esté en rango lógico para una unidad de producto (entre $50 y $50.000.000)
-        if price_val <= 0 or price_val > 50_000_000:
-            if len(tokens) >= 3:
-                alt_p = parse_price(tokens[-2].replace('$', '').strip())
-                if alt_p > 0 and alt_p < 50_000_000:
-                    price_val = alt_p
-                    tokens = tokens[:-1]
-                else:
-                    continue
-            else:
-                continue
-                
-        desc_tokens = tokens[:-1]
-        if not desc_tokens:
-            continue
-            
-        # Si el último token restante en la descripción es una columna auxiliar de peso/multiplicador (ej: '1', '1.5', '15', '0.085', '0.25')
-        if len(desc_tokens) >= 2:
-            last_dt = desc_tokens[-1].replace(',', '.')
-            try:
-                _ = float(last_dt)
-                # Es un número suelto de la columna peso -> removerlo de la descripción
-                desc_tokens = desc_tokens[:-1]
-            except ValueError:
                 pass
                 
-        # Chequear si el primer token es un código de artículo (ej: 3003, SHU008, 1528)
-        code = ""
-        if len(desc_tokens) >= 2:
-            first_t = desc_tokens[0]
-            if (first_t.isdigit() and len(first_t) <= 14) or (re.match(r'^[A-Za-z]{1,5}\d{2,8}$', first_t)):
-                code = first_t
-                desc_tokens = desc_tokens[1:]
-                
-        desc_str = " ".join(desc_tokens).strip()
-        if desc_str and len(desc_str) >= 2 and any(c.isalpha() for c in desc_str):
-            parsed_rows.append({
-                "Codigo": code,
-                "Detalle_Producto": desc_str,
-                "Precio": str(price_val)
-            })
+            if not rows:
+                txt = page.get_text("text")
+                if txt:
+                    for l in txt.splitlines():
+                        line_clean = l.strip()
+                        if not line_clean or len(line_clean) < 3:
+                            continue
+                        tokens = [t.strip() for t in re.split(r'\s+', line_clean) if t.strip()]
+                        if len(tokens) >= 2:
+                            pv = parse_price(tokens[-1])
+                            if pv >= 50 and pv < 50_000_000:
+                                non_price = tokens[:-1]
+                                if len(non_price) >= 2:
+                                    try:
+                                        _ = float(non_price[-1].replace(',', '.'))
+                                        non_price = non_price[:-1]
+                                    except ValueError:
+                                        pass
+                                code = ""
+                                if len(non_price) >= 2 and (non_price[0].isdigit() or re.match(r'^[A-Za-z]{1,5}\d{2,8}$', non_price[0])):
+                                    code = non_price[0]
+                                    desc = ' '.join(non_price[1:])
+                                else:
+                                    desc = ' '.join(non_price)
+                                if desc and any(c.isalpha() for c in desc):
+                                    rows.append({
+                                        'Codigo': code,
+                                        'Detalle_Producto': desc,
+                                        'Precio': str(pv)
+                                    })
+    except Exception:
+        pass
 
-    if parsed_rows:
-        return pd.DataFrame(parsed_rows)
+    if rows and len(rows) >= 3:
+        return pd.DataFrame(rows)
+
+    # ESTRATEGIA 3: pypdf con segmentación continua de flujo (para PDFs continuos sin saltos de línea)
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(io.BytesIO(file_bytes))
+        full_text = ""
+        for page in reader.pages:
+            t = page.extract_text()
+            if t:
+                full_text += "\n" + t
+                
+        if full_text:
+            # Segmentar texto continuo por precios tipo '24400.00' o '$ 24.500,00'
+            price_pattern = re.compile(r'(?:(?<=\s)|^)(\$?\s*\d{3,7}\.\d{2}|\$?\s*\d{1,3}(?:\.\d{3})+(?:,\d{2})?|\$?\s*\d{4,7})(?=\s+[A-Za-z0-9]|\s*$)')
+            for chunk in full_text.splitlines():
+                chunk_clean = chunk.strip()
+                if not chunk_clean:
+                    continue
+                matches = list(price_pattern.finditer(chunk_clean))
+                if matches:
+                    last_pos = 0
+                    for m in matches:
+                        p_val = parse_price(m.group(1))
+                        desc_seg = chunk_clean[last_pos:m.start()].strip()
+                        last_pos = m.end()
+                        if desc_seg and p_val >= 50 and p_val < 50_000_000:
+                            toks = [tk.strip() for tk in re.split(r'\s+', desc_seg) if tk.strip()]
+                            code = ""
+                            if len(toks) >= 2 and (toks[0].isdigit() or re.match(r'^[A-Za-z]{1,5}\d{2,8}$', toks[0])):
+                                code = toks[0]
+                                desc_seg = " ".join(toks[1:])
+                            if desc_seg and any(c.isalpha() for c in desc_seg):
+                                rows.append({
+                                    'Codigo': code,
+                                    'Detalle_Producto': desc_seg,
+                                    'Precio': str(p_val)
+                                })
+    except Exception:
+        pass
+
+    if rows:
+        return pd.DataFrame(rows)
     else:
-        return pd.DataFrame({'Detalle_Producto': all_lines, 'Precio': ['0.0'] * len(all_lines)})
+        raise ValueError("El archivo PDF no contiene texto o tablas extraíbles.")
