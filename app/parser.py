@@ -245,9 +245,9 @@ def parse_file_to_dataframe(file_bytes: bytes, filename: str) -> Tuple[pd.DataFr
 def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
     """
     Extrae tablas y texto estructurado de un archivo PDF usando motores de alta fidelidad:
-    1. pdfplumber: Extracción precisa de tablas estructuradas preservando 100% de los nombres.
-    2. pymupdf: Detección de bloques de texto y tablas por coordenadas visuales.
-    3. Segmentación continua por patrones de precio para PDFs que emiten texto en flujo único.
+    1. pdfplumber: Extracción precisa de tablas estructuradas (preserva el 100% de nombres y celdas).
+    2. pymupdf: Detección de bloques, tablas y secuencias de líneas (Código -> Descripción -> Precio).
+    3. Segmentación continua por patrones de precio para flujos de texto sin saltos de línea.
     """
     rows = []
     
@@ -276,10 +276,8 @@ def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
                                 desc_raw = cells[0].strip()
                                 p_raw = cells[2].strip()
                                 p_val = parse_price(p_raw)
-                                if p_val < 50: # Si la columna 2 era el precio
-                                    p_val2 = parse_price(cells[1].strip())
-                                    if p_val2 >= 50:
-                                        p_val = p_val2
+                                if p_val < 50:
+                                    p_val = parse_price(cells[1].strip())
                                         
                                 if p_val >= 50 and p_val < 50_000_000 and len(desc_raw) >= 2:
                                     code = ""
@@ -331,103 +329,78 @@ def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
     except Exception:
         pass
         
-    if rows and len(rows) >= 3:
+    if rows and len(rows) >= 5:
         return pd.DataFrame(rows)
         
-    # ESTRATEGIA 2: PyMuPDF (pymupdf) para extracción de bloques y tablas visuales
+    # ESTRATEGIA 2: PyMuPDF (pymupdf) con análisis secuencial de líneas
+    rows = []
     try:
         import pymupdf
         doc = pymupdf.open(stream=file_bytes, filetype="pdf")
+        raw_lines = []
         for page in doc:
-            try:
-                tabs = page.find_tables()
-                if tabs and len(tabs.tables) > 0:
-                    for tab in tabs:
-                        df_tab = tab.extract()
-                        for r in df_tab:
-                            if not r:
-                                continue
-                            cells = [str(c).strip() for c in r if c is not None and str(c).strip()]
-                            if len(cells) < 2:
-                                continue
-                            joined = ' '.join(cells).lower()
-                            if ('código' in joined or 'codigo' in joined) and ('precio' in joined or 'venta' in joined):
-                                continue
-                                
-                            if len(cells) == 3:
-                                desc_raw = cells[0].strip()
-                                p_val = parse_price(cells[2].strip())
-                                if p_val < 50:
-                                    p_val = parse_price(cells[1].strip())
-                                if p_val >= 50 and p_val < 50_000_000 and len(desc_raw) >= 2:
-                                    code = ""
-                                    code_m = re.match(r'^([A-Za-z0-9_-]{2,15})\s+(.+)$', desc_raw)
-                                    if code_m and not code_m.group(1).isalpha():
-                                        code = code_m.group(1)
-                                        desc_clean = code_m.group(2).strip()
-                                    else:
-                                        desc_clean = desc_raw
-                                    if any(c.isalpha() for c in desc_clean):
-                                        rows.append({
-                                            'Codigo': code,
-                                            'Detalle_Producto': desc_clean,
-                                            'Precio': str(p_val)
-                                        })
-                                continue
-                                
-                            price_val = None
-                            price_idx = -1
-                            for idx in reversed(range(len(cells))):
-                                pv = parse_price(cells[idx])
-                                if pv >= 50 and pv < 50_000_000:
-                                    price_val = pv
-                                    price_idx = idx
-                                    break
-                            if price_val is not None:
-                                non_price = [cells[j] for j in range(len(cells)) if j != price_idx]
-                                if not non_price:
-                                    continue
-                                desc_full = " ".join(non_price).strip()
-                                code = ""
-                                code_m = re.match(r'^([A-Za-z0-9_-]{2,15})\s+(.+)$', desc_full)
-                                if code_m and not code_m.group(1).isalpha():
-                                    code = code_m.group(1)
-                                    desc_clean = code_m.group(2).strip()
-                                else:
-                                    desc_clean = desc_full
-                                if desc_clean and any(c.isalpha() for c in desc_clean):
-                                    rows.append({
-                                        'Codigo': code,
-                                        'Detalle_Producto': desc_clean,
-                                        'Precio': str(price_val)
-                                    })
-            except Exception:
-                pass
-                
-            if not rows:
-                txt = page.get_text("text")
-                if txt:
-                    for l in txt.splitlines():
-                        line_clean = l.strip()
-                        if not line_clean or len(line_clean) < 3:
-                            continue
-                        tokens = [t.strip() for t in re.split(r'\s+', line_clean) if t.strip()]
-                        if len(tokens) >= 2:
-                            pv = parse_price(tokens[-1])
-                            if pv >= 50 and pv < 50_000_000:
-                                non_price = tokens[:-1]
-                                code = ""
-                                if len(non_price) >= 2 and (non_price[0].isdigit() or re.match(r'^[A-Za-z]{1,5}\d{2,8}$', non_price[0])):
-                                    code = non_price[0]
-                                    desc = ' '.join(non_price[1:])
-                                else:
-                                    desc = ' '.join(non_price)
-                                if desc and any(c.isalpha() for c in desc):
-                                    rows.append({
-                                        'Codigo': code,
-                                        'Detalle_Producto': desc,
-                                        'Precio': str(pv)
-                                    })
+            raw_lines.extend(page.get_text("text").splitlines())
+            
+        clean_lines = []
+        for l in raw_lines:
+            ls = l.strip()
+            if not ls:
+                continue
+            ll = ls.lower()
+            if any(k in ll for k in ['lista de precios', 'lista general', 'código      descripción', 'codigo descripcion', 'página', 'pagina', 'page -', 'page 1 of']):
+                continue
+            clean_lines.append(ls)
+            
+        i = 0
+        while i < len(clean_lines):
+            line = clean_lines[i]
+            
+            # Caso 1: Línea completa con precio al final (ej: "3003 BANDEJA SANITARIA JUMBO 4200.00")
+            toks = [t.strip() for t in re.split(r'\s+', line) if t.strip()]
+            if len(toks) >= 2:
+                pv = parse_price(toks[-1].replace('$', '').strip())
+                if pv >= 50 and pv < 50_000_000:
+                    non_price = toks[:-1]
+                    code = ""
+                    if len(non_price) >= 2 and (non_price[0].isdigit() or re.match(r'^[A-Za-z]{1,5}\d{2,8}$', non_price[0])):
+                        code = non_price[0]
+                        desc = " ".join(non_price[1:])
+                    else:
+                        desc = " ".join(non_price)
+                    desc_lower = desc.lower()
+                    if desc and any(c.isalpha() for c in desc) and 'venta' not in desc_lower and 'código' not in desc_lower and 'descrip' not in desc_lower:
+                        rows.append({'Codigo': code, 'Detalle_Producto': desc, 'Precio': str(pv)})
+                        i += 1
+                        continue
+                        
+            # Caso 2: Secuencia Código -> Descripción -> Precio (3 renglones consecutivos)
+            if i + 2 < len(clean_lines):
+                p_cand = parse_price(clean_lines[i+2].replace('$', '').strip())
+                if p_cand >= 50 and p_cand < 50_000_000 and any(c.isalpha() for c in clean_lines[i+1]):
+                    code = clean_lines[i]
+                    desc = clean_lines[i+1]
+                    desc_lower = desc.lower()
+                    if 'venta' not in desc_lower and 'código' not in desc_lower and 'descrip' not in desc_lower:
+                        rows.append({'Codigo': code, 'Detalle_Producto': desc, 'Precio': str(p_cand)})
+                        i += 3
+                        continue
+                        
+            # Caso 3: Secuencia Descripción -> Precio (2 renglones consecutivos)
+            if i + 1 < len(clean_lines):
+                p_cand = parse_price(clean_lines[i+1].replace('$', '').strip())
+                if p_cand >= 50 and p_cand < 50_000_000 and any(c.isalpha() for c in clean_lines[i]):
+                    desc = clean_lines[i]
+                    desc_lower = desc.lower()
+                    if 'venta' not in desc_lower and 'código' not in desc_lower and 'descrip' not in desc_lower:
+                        code = ""
+                        code_m = re.match(r'^([A-Za-z0-9_-]{2,15})\s+(.+)$', desc)
+                        if code_m and not code_m.group(1).isalpha():
+                            code = code_m.group(1)
+                            desc = code_m.group(2).strip()
+                        rows.append({'Codigo': code, 'Detalle_Producto': desc, 'Precio': str(p_cand)})
+                        i += 2
+                        continue
+            i += 1
     except Exception:
         pass
 
