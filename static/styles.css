@@ -37,6 +37,33 @@
     padding-bottom: 1.5rem !important;
   }
   
+  /* Category Pills */
+.category-pill {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  white-space: nowrap;
+  user-select: none;
+}
+.category-pill:hover {
+  background-color: #e2e8f0;
+  color: #1e293b;
+}
+.category-pill.active {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+  
   /* Ajuste de fuentes y espaciado en pantallas pequeñas */
   h1 {
     font-size: 1rem !important;

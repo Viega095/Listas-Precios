@@ -7,7 +7,7 @@
   <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="stylesheet" href="/static/styles.css?v=4.5.0">
+  <link rel="stylesheet" href="/static/styles.css?v=5.0.0">
   <script>
     tailwind.config = {
       theme: {
@@ -90,6 +90,27 @@
 
     <!-- Notificaciones / Alertas Globales -->
     <div id="global-alert-container" class="mb-4 space-y-2"></div>
+
+    <!-- Banner de Restauración de Sesión Guardada -->
+    <div id="session-restore-banner" class="hidden mb-6 bg-gradient-to-r from-sky-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-sky-600/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-300 shrink-0">
+          <i data-lucide="history" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h4 class="font-bold text-sm sm:text-base">Tenés una comparación guardada en este dispositivo</h4>
+          <p class="text-xs text-sky-200 mt-0.5" id="session-restore-text">Última sesión detectada con productos listos.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+        <button onclick="window.app.restoreSession()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5">
+          <i data-lucide="play" class="w-4 h-4"></i> Continuar Comparación
+        </button>
+        <button onclick="window.app.clearSavedSession()" class="bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-3 py-2.5 rounded-xl transition">
+          Descartar
+        </button>
+      </div>
+    </div>
 
     <!-- ========================================== -->
     <!-- PASO 1: CARGA DE ARCHIVOS                  -->
@@ -264,23 +285,52 @@
         <div id="doubtful-list-container" class="space-y-3 max-h-[500px] overflow-y-auto pr-1"></div>
       </div>
 
-      <!-- Barra Superior: Buscador y Botones de Exportación Responsivos -->
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-sm">
+      <!-- Barra Superior: Buscador, Filtros de Categoría y Botones de Acción -->
+      <div class="space-y-3 bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-sm">
         
-        <!-- Buscador en tiempo real -->
-        <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-          <input type="text" id="table-search" placeholder="Buscar por producto (ej: Pro Plan, Kitten), marca o código..." class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-4 py-2.5 text-xs focus:border-sky-500 focus:bg-white focus:outline-none shadow-xs font-medium">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <!-- Buscador en tiempo real -->
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="table-search" placeholder="Buscar por producto (ej: Pro Plan, Kitten), marca o código..." class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-4 py-2.5 text-xs focus:border-sky-500 focus:bg-white focus:outline-none shadow-xs font-medium">
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Botón Armar Pedido Óptimo WhatsApp -->
+            <button onclick="window.app.openOrderOptimizerModal()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-sm transition">
+              <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-200"></i> <span>🛒 Pedido Óptimo</span>
+            </button>
+
+            <!-- Botones de Exportación General -->
+            <button onclick="window.app.exportFile('excel')" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i> <span>Excel</span>
+            </button>
+            <button onclick="window.app.exportFile('pdf')" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
+              <i data-lucide="file-text" class="w-4 h-4 text-rose-400"></i> <span>PDF</span>
+            </button>
+
+            <!-- Botón Reiniciar / Nueva Comparación -->
+            <button onclick="window.app.resetComparison()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition" title="Empezar nueva comparación">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i> <span class="hidden sm:inline">Nueva Comparación</span>
+            </button>
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:flex sm:items-center gap-2">
-          <!-- Botones de Exportación General -->
-          <button onclick="window.app.exportFile('excel')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
-            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> <span>Excel</span>
-          </button>
-          <button onclick="window.app.exportFile('pdf')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
-            <i data-lucide="file-text" class="w-4 h-4"></i> <span>PDF</span>
-          </button>
+        <!-- Filtros Rápidos por Categoría y Especie (Pills con scroll horizontal táctil) -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar font-medium">
+          <span class="text-slate-400 text-[11px] font-bold uppercase tracking-wider shrink-0 mr-1">Filtros:</span>
+          <button type="button" onclick="window.app.setCategoryPill('todos')" data-pill="todos" class="category-pill active shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition">✨ Todos</button>
+          <button type="button" onclick="window.app.setCategoryPill('perros')" data-pill="perros" class="category-pill shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition">🐶 Perros</button>
+          <button type="button" onclick="window.app.setCategoryPill('gatos')" data-pill="gatos" class="category-pill shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition">🐱 Gatos</button>
+          <button type="button" onclick="window.app.setCategoryPill('farmacia')" data-pill="farmacia" class="category-pill shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition">💊 Farmacia & Pipetas</button>
+          <button type="button" onclick="window.app.setCategoryPill('piedras')" data-pill="piedras" class="category-pill shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition">🪨 Piedras & Sanidad</button>
+          <button type="button" onclick="window.app.setCategoryPill('granos')" data-pill="granos" class="category-pill shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition">🌾 Granos & Campo</button>
+          <button type="button" onclick="window.app.setCategoryPill('ahorro20')" data-pill="ahorro20" class="category-pill shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition">🔥 Mayor Ahorro (>20%)</button>
+          <button type="button" onclick="window.app.setCategoryPill('ganador1')" data-pill="ganador1" class="category-pill shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition">⭐ Más barato Prov. 1</button>
+          <button type="button" onclick="window.app.setCategoryPill('ganador2')" data-pill="ganador2" class="category-pill shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition">⭐ Más barato Prov. 2</button>
+          <button type="button" onclick="window.app.setCategoryPill('old_prince')" data-pill="old_prince" class="category-pill shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition">🥩 Old Prince</button>
+          <button type="button" onclick="window.app.setCategoryPill('vital_can')" data-pill="vital_can" class="category-pill shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition">🥩 Vital Can</button>
+          <button type="button" onclick="window.app.setCategoryPill('royal_canin')" data-pill="royal_canin" class="category-pill shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition">🥩 Royal Canin</button>
         </div>
       </div>
 
@@ -425,6 +475,46 @@
     </div>
   </div>
 
+  <!-- MODAL: ARMADOR DE PEDIDO ÓPTIMO PARA WHATSAPP / DISTRIBUIDORES -->
+  <div id="order-optimizer-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-150 max-h-[92vh] flex flex-col">
+      <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-emerald-900 to-teal-900 text-white shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300">
+            <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold">🛒 Pedido Óptimo por Distribuidor</h3>
+            <p class="text-xs text-emerald-200">Compra cada producto al distribuidor que lo tiene más barato</p>
+          </div>
+        </div>
+        <button onclick="document.getElementById('order-optimizer-modal').classList.add('hidden')" class="text-slate-300 hover:text-white p-2 rounded-xl hover:bg-white/10 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 text-xs" id="order-optimizer-body">
+        <!-- Renderizado dinámico desde app.js -->
+      </div>
+
+      <div class="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end shrink-0">
+        <button onclick="document.getElementById('order-optimizer-modal').classList.add('hidden')" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botones Flotantes de Navegación Rápida (Arriba / Abajo) -->
+  <div id="floating-scroll-controls" class="fixed bottom-5 right-5 z-40 flex flex-col gap-2">
+    <button onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="w-11 h-11 bg-slate-900/90 hover:bg-slate-900 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition backdrop-blur border border-white/20" title="Ir arriba de todo">
+      <i data-lucide="chevron-up" class="w-5 h-5"></i>
+    </button>
+    <button onclick="window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })" class="w-11 h-11 bg-slate-900/90 hover:bg-slate-900 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition backdrop-blur border border-white/20" title="Ir abajo de todo">
+      <i data-lucide="chevron-down" class="w-5 h-5"></i>
+    </button>
+  </div>
+
   <!-- Loading Overlay Moderno -->
   <div id="loading-overlay" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex flex-col items-center justify-center text-white hidden">
     <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 text-center max-w-sm shadow-2xl flex flex-col items-center">
@@ -441,6 +531,6 @@
     </div>
   </footer>
 
-  <script src="/static/app.js?v=4.5.0"></script>
+  <script src="/static/app.js?v=5.0.0"></script>
 </body>
 </html>

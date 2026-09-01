@@ -18,6 +18,7 @@ class PriceComparatorApp {
     this.filteredRows = [];
     this.currentViewMode = 'brands';
     this.activeTableFilter = 'todos';
+    this.activeCategoryPill = 'todos';
     
     this.init();
   }
@@ -25,6 +26,7 @@ class PriceComparatorApp {
   init() {
     this.bindEvents();
     this.renderConfigCards();
+    this.checkSavedSession();
     lucide.createIcons();
   }
 
@@ -525,6 +527,7 @@ class PriceComparatorApp {
       document.getElementById('btn-save-session').classList.remove('hidden');
 
       this.goToStep(5);
+      this.saveSessionToLocalStorage();
 
       this.showAlert('success', `¡Procesamiento completo! Se analizaron ${data.total_items.toLocaleString()} artículos.`);
 
@@ -824,6 +827,18 @@ class PriceComparatorApp {
     this.applyFiltersAndRender();
   }
 
+  setCategoryPill(pillKey) {
+    this.activeCategoryPill = pillKey;
+    document.querySelectorAll('.category-pill').forEach(btn => {
+      if (btn.getAttribute('data-pill') === pillKey) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+    this.applyFiltersAndRender();
+  }
+
   // ========================================================
   // FILTRADO Y RENDERIZADO
   // ========================================================
@@ -837,6 +852,7 @@ class PriceComparatorApp {
     ).toLowerCase().trim();
     
     const filterBtn = this.activeTableFilter || 'todos';
+    const pill = this.activeCategoryPill || 'todos';
 
     let list = this.comparisonResult.rows.filter(r => {
       if (searchTerm) {
@@ -845,6 +861,34 @@ class PriceComparatorApp {
         const matchBrand = (r.marca || '').toLowerCase().includes(searchTerm);
         const matchPres = (r.presentacion || '').toLowerCase().includes(searchTerm);
         if (!matchName && !matchCode && !matchBrand && !matchPres) return false;
+      }
+
+      // Filtro de Pills Rápidas
+      if (pill !== 'todos') {
+        const prodText = `${r.producto || ''} ${r.marca || ''} ${r.presentacion || ''}`.toLowerCase();
+        if (pill === 'perros') {
+          if (!prodText.match(/\b(perro|perros|canino|caninos|cachorro|cachorros|puppy|dog|dogs)\b/) && !r.marca?.toLowerCase().includes('dog')) return false;
+        } else if (pill === 'gatos') {
+          if (!prodText.match(/\b(gato|gatos|felino|felinos|gatito|gatitos|kitten|cat|cats|whiskas|catchow|michi)\b/) && !r.marca?.toLowerCase().includes('cat')) return false;
+        } else if (pill === 'farmacia') {
+          if (!r.is_pipeta && !prodText.match(/\b(pipeta|pulguicida|garrapaticida|comprimido|power|simparica|nexgard|bravecto|ospret|kil|fiprobit|farmacia|shampoo)\b/)) return false;
+        } else if (pill === 'piedras') {
+          if (!r.is_piedra && !prodText.match(/\b(piedra|piedras|arena|sanitaria|sanitario|silica|paño\s*pet|pano\s*pet)\b/)) return false;
+        } else if (pill === 'granos') {
+          if (!prodText.match(/\b(mezcla|alpiste|mijo|girasol|maiz|conejo|gallina|palmera|forrajeria|forrajería|avena|cebada)\b/) && r.marca !== 'La Palmera (Forrajería)') return false;
+        } else if (pill === 'ahorro20') {
+          if (!r.diferencia_porcentaje || r.diferencia_porcentaje < 20) return false;
+        } else if (pill === 'ganador1') {
+          if (r.proveedor_mas_barato_idx !== 0 || r.present_count < 2) return false;
+        } else if (pill === 'ganador2') {
+          if (r.proveedor_mas_barato_idx !== 1 || r.present_count < 2) return false;
+        } else if (pill === 'old_prince') {
+          if (!prodText.includes('old prince')) return false;
+        } else if (pill === 'vital_can') {
+          if (!prodText.includes('vital')) return false;
+        } else if (pill === 'royal_canin') {
+          if (!prodText.includes('royal')) return false;
+        }
       }
 
       if (filterBtn === 'mas_barato_l1' && r.proveedor_mas_barato_idx !== 0) return false;
@@ -1223,6 +1267,7 @@ class PriceComparatorApp {
       this.comparisonResult = { totals: data.totals, rows: data.rows };
       this.filteredRows = [...data.rows];
 
+      this.saveSessionToLocalStorage();
       this.goToStep(5);
       this.showAlert('success', 'Sesión cargada exitosamente.');
     } catch (err) {
@@ -1230,6 +1275,220 @@ class PriceComparatorApp {
     } finally {
       this.hideLoading();
     }
+  }
+
+  // ========================================================
+  // PERSISTENCIA LOCAL, REINICIO Y PEDIDO ÓPTIMO
+  // ========================================================
+  saveSessionToLocalStorage() {
+    if (!this.comparisonResult) return;
+    try {
+      const sessionData = {
+        comparisonResult: this.comparisonResult,
+        configs: this.configs,
+        uploadedFiles: Object.keys(this.uploadedFiles).reduce((acc, k) => {
+          acc[k] = { name: this.uploadedFiles[k]?.name || `Lista ${parseInt(k) + 1}`, total_rows: this.uploadedFiles[k]?.total_rows || 0 };
+          return acc;
+        }, {}),
+        savedAt: new Date().toLocaleString('es-AR')
+      };
+      localStorage.setItem('listas_precios_cache_v2', JSON.stringify(sessionData));
+    } catch (e) {
+      console.warn("No se pudo guardar la sesión en LocalStorage:", e);
+    }
+  }
+
+  checkSavedSession() {
+    try {
+      const raw = localStorage.getItem('listas_precios_cache_v2');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data && data.comparisonResult && data.comparisonResult.rows?.length > 0) {
+        const banner = document.getElementById('session-restore-banner');
+        const txt = document.getElementById('session-restore-text');
+        if (banner && txt) {
+          txt.innerText = `Comparación del ${data.savedAt || 'reciente'} con ${data.comparisonResult.rows.length.toLocaleString()} productos analizados.`;
+          banner.classList.remove('hidden');
+          lucide.createIcons();
+        }
+      }
+    } catch (e) {
+      console.error("Error leyendo sesión de LocalStorage:", e);
+    }
+  }
+
+  restoreSession() {
+    try {
+      const raw = localStorage.getItem('listas_precios_cache_v2');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.configs) this.configs = data.configs;
+      if (data.uploadedFiles) this.uploadedFiles = data.uploadedFiles;
+      this.comparisonResult = data.comparisonResult;
+      this.filteredRows = [...(this.comparisonResult.rows || [])];
+
+      document.getElementById('session-restore-banner')?.classList.add('hidden');
+      this.goToStep(5);
+      this.renderDoubtfulList();
+      this.renderResultsDashboard();
+      this.applyFiltersAndRender();
+      this.showAlert('success', '¡Comparación restaurada con éxito!');
+    } catch (e) {
+      this.showAlert('error', 'No se pudo restaurar la sesión guardada.');
+    }
+  }
+
+  clearSavedSession() {
+    localStorage.removeItem('listas_precios_cache_v2');
+    document.getElementById('session-restore-banner')?.classList.add('hidden');
+    this.showAlert('success', 'Sesión anterior descartada.');
+  }
+
+  resetComparison() {
+    if (confirm('¿Deseás reiniciar la aplicación y comenzar una nueva comparación desde cero?')) {
+      localStorage.removeItem('listas_precios_cache_v2');
+      window.location.reload();
+    }
+  }
+
+  openOrderOptimizerModal() {
+    if (!this.comparisonResult || !this.comparisonResult.rows) {
+      this.showAlert('error', 'Primero debés procesar una comparación de precios.');
+      return;
+    }
+
+    const rows = this.comparisonResult.rows;
+    const prov1Name = this.configs[0]?.nombre || 'Proveedor 1';
+    const prov2Name = this.configs[1]?.nombre || 'Proveedor 2';
+
+    const orderProv1 = [];
+    const orderProv2 = [];
+    let totalP1 = 0;
+    let totalP2 = 0;
+    let totalAhorro = 0;
+
+    rows.forEach(r => {
+      if (r.proveedor_mas_barato_idx === 0 && r.precio_l1) {
+        orderProv1.push({
+          producto: r.producto,
+          marca: r.marca,
+          presentacion: r.presentacion,
+          precio: r.precio_l1,
+          ahorro: (r.precio_l2 && r.precio_l2 > r.precio_l1) ? (r.precio_l2 - r.precio_l1) : 0
+        });
+        totalP1 += r.precio_l1;
+        if (r.precio_l2 && r.precio_l2 > r.precio_l1) totalAhorro += (r.precio_l2 - r.precio_l1);
+      } else if (r.proveedor_mas_barato_idx === 1 && r.precio_l2) {
+        orderProv2.push({
+          producto: r.producto,
+          marca: r.marca,
+          presentacion: r.presentacion,
+          precio: r.precio_l2,
+          ahorro: (r.precio_l1 && r.precio_l1 > r.precio_l2) ? (r.precio_l1 - r.precio_l2) : 0
+        });
+        totalP2 += r.precio_l2;
+        if (r.precio_l1 && r.precio_l1 > r.precio_l2) totalAhorro += (r.precio_l1 - r.precio_l2);
+      }
+    });
+
+    const body = document.getElementById('order-optimizer-body');
+    if (!body) return;
+
+    body.innerHTML = `
+      <!-- Resumen de Ahorro Global -->
+      <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded">Estrategia Óptima de Compra</span>
+          <h4 class="font-extrabold text-slate-900 text-sm sm:text-base mt-1">Ahorro Total Estimado al Dividir el Pedido</h4>
+          <p class="text-xs text-slate-600">Comprando cada producto a su distribuidor líder ahorrás frente a pedir todo a uno solo.</p>
+        </div>
+        <div class="text-left sm:text-right">
+          <p class="text-xl sm:text-2xl font-black text-emerald-700">+$${totalAhorro.toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+          <span class="text-[11px] font-bold text-emerald-800">de ahorro directo</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Pedido para Proveedor 1 -->
+        <div class="bg-white rounded-xl border border-slate-300 p-4 shadow-xs space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+              <div>
+                <h5 class="font-black text-slate-900 text-sm">📦 Pedido ${prov1Name}</h5>
+                <p class="text-slate-500 text-[11px]">${orderProv1.length} productos más baratos / exclusivos</p>
+              </div>
+              <span class="font-extrabold text-sky-800 text-sm">$${totalP1.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            </div>
+            <div class="mt-2 max-h-48 overflow-y-auto space-y-1.5 pr-1 divide-y divide-slate-100">
+              ${orderProv1.map(p => `
+                <div class="pt-1.5 flex items-start justify-between gap-2 text-xs">
+                  <span class="text-slate-800 font-medium truncate max-w-[200px]" title="${p.producto}">${p.producto}</span>
+                  <span class="font-bold text-slate-900 shrink-0">$${p.precio.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <button onclick="window.app.copyOrderToClipboard(0)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
+            <i data-lucide="copy" class="w-4 h-4"></i> Copiar Pedido ${prov1Name} (WhatsApp)
+          </button>
+        </div>
+
+        <!-- Pedido para Proveedor 2 -->
+        <div class="bg-white rounded-xl border border-slate-300 p-4 shadow-xs space-y-3 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+              <div>
+                <h5 class="font-black text-slate-900 text-sm">📦 Pedido ${prov2Name}</h5>
+                <p class="text-slate-500 text-[11px]">${orderProv2.length} productos más baratos / exclusivos</p>
+              </div>
+              <span class="font-extrabold text-indigo-800 text-sm">$${totalP2.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+            </div>
+            <div class="mt-2 max-h-48 overflow-y-auto space-y-1.5 pr-1 divide-y divide-slate-100">
+              ${orderProv2.map(p => `
+                <div class="pt-1.5 flex items-start justify-between gap-2 text-xs">
+                  <span class="text-slate-800 font-medium truncate max-w-[200px]" title="${p.producto}">${p.producto}</span>
+                  <span class="font-bold text-slate-900 shrink-0">$${p.precio.toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <button onclick="window.app.copyOrderToClipboard(1)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
+            <i data-lucide="copy" class="w-4 h-4"></i> Copiar Pedido ${prov2Name} (WhatsApp)
+          </button>
+        </div>
+
+      </div>
+    `;
+
+    document.getElementById('order-optimizer-modal').classList.remove('hidden');
+    lucide.createIcons();
+  }
+
+  copyOrderToClipboard(provIdx) {
+    if (!this.comparisonResult || !this.comparisonResult.rows) return;
+    const provName = this.configs[provIdx]?.nombre || `Proveedor ${provIdx + 1}`;
+    const items = this.comparisonResult.rows.filter(r => r.proveedor_mas_barato_idx === provIdx && r[`precio_l${provIdx + 1}`]);
+    
+    let total = 0;
+    let txt = `🛒 *PEDIDO DE MERCADERÍA - ${provName.toUpperCase()}*\n`;
+    txt += `📅 Fecha: ${new Date().toLocaleDateString('es-AR')}\n\n`;
+    txt += `*Detalle de Productos:*\n`;
+
+    items.forEach((it, idx) => {
+      const price = it[`precio_l${provIdx + 1}`];
+      total += price;
+      txt += `${idx + 1}. 🔹 ${it.producto} ➔ $${price.toLocaleString('es-AR', {minimumFractionDigits: 2})}\n`;
+    });
+
+    txt += `\n📊 *TOTAL ESTIMADO (${items.length} artículos): $${total.toLocaleString('es-AR', {minimumFractionDigits: 2})}*`;
+
+    navigator.clipboard.writeText(txt).then(() => {
+      this.showAlert('success', `¡Pedido para ${provName} copiado! Listo para pegar en WhatsApp.`);
+    }).catch(err => {
+      console.error(err);
+      this.showAlert('error', 'No se pudo copiar automáticamente. Por favor seleccioná el texto.');
+    });
   }
 }
 
