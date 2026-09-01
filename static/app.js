@@ -583,7 +583,10 @@ class PriceComparatorApp {
             </div>` : ''}
           </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0 self-end md:self-center">
+        <div class="flex flex-wrap items-center gap-2 shrink-0 self-end md:self-center">
+          <button type="button" onclick="event.stopPropagation(); window.app.openProductModal('${r.group_id}')" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition active:scale-95">
+            <i data-lucide="eye" class="w-4 h-4"></i> Detalles
+          </button>
           <button type="button" onclick="window.app.overrideMatchOptimistic('${r.group_id}', 'confirm', this.closest('.doubtful-item-card'))" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition active:scale-95">
             <i data-lucide="check" class="w-4 h-4"></i> Confirmar
           </button>
