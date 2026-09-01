@@ -245,7 +245,7 @@ def parse_file_to_dataframe(file_bytes: bytes, filename: str) -> Tuple[pd.DataFr
 def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
     """
     Extrae tablas y texto estructurado de un archivo PDF usando motores de alta fidelidad:
-    1. pdfplumber: Extracción precisa de tablas estructuradas (detecta bordes y alineaciones de columnas).
+    1. pdfplumber: Extracción precisa de tablas estructuradas preservando 100% de los nombres.
     2. pymupdf: Detección de bloques de texto y tablas por coordenadas visuales.
     3. Segmentación continua por patrones de precio para PDFs que emiten texto en flujo único.
     """
@@ -271,7 +271,34 @@ def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
                             if 'página' in joined or 'pagina' in joined or 'page' in joined:
                                 continue
                                 
-                            # Buscar celda de precio
+                            # Si tiene 3 columnas (Descripción, Peso, Precio)
+                            if len(cells) == 3:
+                                desc_raw = cells[0].strip()
+                                p_raw = cells[2].strip()
+                                p_val = parse_price(p_raw)
+                                if p_val < 50: # Si la columna 2 era el precio
+                                    p_val2 = parse_price(cells[1].strip())
+                                    if p_val2 >= 50:
+                                        p_val = p_val2
+                                        
+                                if p_val >= 50 and p_val < 50_000_000 and len(desc_raw) >= 2:
+                                    code = ""
+                                    code_m = re.match(r'^([A-Za-z0-9_-]{2,15})\s+(.+)$', desc_raw)
+                                    if code_m and not code_m.group(1).isalpha():
+                                        code = code_m.group(1)
+                                        desc_clean = code_m.group(2).strip()
+                                    else:
+                                        desc_clean = desc_raw
+                                        
+                                    if any(c.isalpha() for c in desc_clean):
+                                        rows.append({
+                                            'Codigo': code,
+                                            'Detalle_Producto': desc_clean,
+                                            'Precio': str(p_val)
+                                        })
+                                continue
+                                
+                            # Si tiene 2 columnas (Descripción, Precio) o más de 3
                             price_val = None
                             price_idx = -1
                             for idx in reversed(range(len(cells))):
@@ -285,27 +312,20 @@ def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
                                 non_price = [cells[j] for j in range(len(cells)) if j != price_idx]
                                 if not non_price:
                                     continue
-                                if len(non_price) >= 2:
-                                    try:
-                                        _ = float(non_price[-1].replace(',', '.'))
-                                        non_price = non_price[:-1]
-                                    except ValueError:
-                                        pass
-                                code = ""
-                                if len(non_price) >= 2:
-                                    first_c = non_price[0]
-                                    if first_c.isdigit() or re.match(r'^[A-Za-z]{1,5}\d{2,8}$', first_c):
-                                        code = first_c
-                                        desc = ' '.join(non_price[1:])
-                                    else:
-                                        desc = ' '.join(non_price)
-                                else:
-                                    desc = non_price[0]
                                     
-                                if desc and any(c.isalpha() for c in desc):
+                                desc_full = " ".join(non_price).strip()
+                                code = ""
+                                code_m = re.match(r'^([A-Za-z0-9_-]{2,15})\s+(.+)$', desc_full)
+                                if code_m and not code_m.group(1).isalpha():
+                                    code = code_m.group(1)
+                                    desc_clean = code_m.group(2).strip()
+                                else:
+                                    desc_clean = desc_full
+                                    
+                                if desc_clean and any(c.isalpha() for c in desc_clean):
                                     rows.append({
                                         'Codigo': code,
-                                        'Detalle_Producto': desc,
+                                        'Detalle_Producto': desc_clean,
                                         'Precio': str(price_val)
                                     })
     except Exception:
@@ -333,6 +353,28 @@ def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
                             joined = ' '.join(cells).lower()
                             if ('código' in joined or 'codigo' in joined) and ('precio' in joined or 'venta' in joined):
                                 continue
+                                
+                            if len(cells) == 3:
+                                desc_raw = cells[0].strip()
+                                p_val = parse_price(cells[2].strip())
+                                if p_val < 50:
+                                    p_val = parse_price(cells[1].strip())
+                                if p_val >= 50 and p_val < 50_000_000 and len(desc_raw) >= 2:
+                                    code = ""
+                                    code_m = re.match(r'^([A-Za-z0-9_-]{2,15})\s+(.+)$', desc_raw)
+                                    if code_m and not code_m.group(1).isalpha():
+                                        code = code_m.group(1)
+                                        desc_clean = code_m.group(2).strip()
+                                    else:
+                                        desc_clean = desc_raw
+                                    if any(c.isalpha() for c in desc_clean):
+                                        rows.append({
+                                            'Codigo': code,
+                                            'Detalle_Producto': desc_clean,
+                                            'Precio': str(p_val)
+                                        })
+                                continue
+                                
                             price_val = None
                             price_idx = -1
                             for idx in reversed(range(len(cells))):
@@ -345,26 +387,18 @@ def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
                                 non_price = [cells[j] for j in range(len(cells)) if j != price_idx]
                                 if not non_price:
                                     continue
-                                if len(non_price) >= 2:
-                                    try:
-                                        _ = float(non_price[-1].replace(',', '.'))
-                                        non_price = non_price[:-1]
-                                    except ValueError:
-                                        pass
+                                desc_full = " ".join(non_price).strip()
                                 code = ""
-                                if len(non_price) >= 2:
-                                    first_c = non_price[0]
-                                    if first_c.isdigit() or re.match(r'^[A-Za-z]{1,5}\d{2,8}$', first_c):
-                                        code = first_c
-                                        desc = ' '.join(non_price[1:])
-                                    else:
-                                        desc = ' '.join(non_price)
+                                code_m = re.match(r'^([A-Za-z0-9_-]{2,15})\s+(.+)$', desc_full)
+                                if code_m and not code_m.group(1).isalpha():
+                                    code = code_m.group(1)
+                                    desc_clean = code_m.group(2).strip()
                                 else:
-                                    desc = non_price[0]
-                                if desc and any(c.isalpha() for c in desc):
+                                    desc_clean = desc_full
+                                if desc_clean and any(c.isalpha() for c in desc_clean):
                                     rows.append({
                                         'Codigo': code,
-                                        'Detalle_Producto': desc,
+                                        'Detalle_Producto': desc_clean,
                                         'Precio': str(price_val)
                                     })
             except Exception:
@@ -382,12 +416,6 @@ def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
                             pv = parse_price(tokens[-1])
                             if pv >= 50 and pv < 50_000_000:
                                 non_price = tokens[:-1]
-                                if len(non_price) >= 2:
-                                    try:
-                                        _ = float(non_price[-1].replace(',', '.'))
-                                        non_price = non_price[:-1]
-                                    except ValueError:
-                                        pass
                                 code = ""
                                 if len(non_price) >= 2 and (non_price[0].isdigit() or re.match(r'^[A-Za-z]{1,5}\d{2,8}$', non_price[0])):
                                     code = non_price[0]
@@ -406,7 +434,7 @@ def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
     if rows and len(rows) >= 3:
         return pd.DataFrame(rows)
 
-    # ESTRATEGIA 3: pypdf con segmentación continua de flujo (para PDFs continuos sin saltos de línea)
+    # ESTRATEGIA 3: Fallback con segmentación continua de flujo
     try:
         from pypdf import PdfReader
         reader = PdfReader(io.BytesIO(file_bytes))
@@ -417,7 +445,6 @@ def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
                 full_text += "\n" + t
                 
         if full_text:
-            # Segmentar texto continuo por precios tipo '24400.00' o '$ 24.500,00'
             price_pattern = re.compile(r'(?:(?<=\s)|^)(\$?\s*\d{3,7}\.\d{2}|\$?\s*\d{1,3}(?:\.\d{3})+(?:,\d{2})?|\$?\s*\d{4,7})(?=\s+[A-Za-z0-9]|\s*$)')
             for chunk in full_text.splitlines():
                 chunk_clean = chunk.strip()
