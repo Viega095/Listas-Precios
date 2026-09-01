@@ -848,7 +848,7 @@ class PriceComparatorApp {
     }
 
     const brandMap = {};
-    rows.forEach(r => {
+    rows.forEach((r, idx) => {
       let bName = (r.marca || '').trim();
       if (!bName || bName.toLowerCase() === 'sin marca') {
         const words = (r.producto || '').split(' ');
@@ -856,7 +856,7 @@ class PriceComparatorApp {
       }
       bName = bName.charAt(0).toUpperCase() + bName.slice(1);
       if (!brandMap[bName]) brandMap[bName] = [];
-      brandMap[bName].push(r);
+      brandMap[bName].push({ ...r, _filteredIndex: idx });
     });
 
     const sortedBrands = Object.keys(brandMap).sort((a, b) => brandMap[b].length - brandMap[a].length);
@@ -868,19 +868,23 @@ class PriceComparatorApp {
       
       let itemsHtml = '';
       items.forEach((it, itemIdx) => {
-        // Gris más visible y contrastado pero agradable
         const bgClass = (itemIdx % 2 === 0) ? 'bg-white' : 'bg-slate-100/90';
 
         let diffBadge = '';
+        let isSevereDiscrepancy = false;
+        let pctVal = 0;
         const uploadedCount = Object.keys(this.uploadedFiles).length;
         
         if (uploadedCount === 2 && it.precio_l1 !== null && it.precio_l2 !== null) {
           const diff = it.precio_l2 - it.precio_l1;
-          const pct = it.precio_l1 > 0 ? (diff / it.precio_l1) * 100 : 0;
+          pctVal = it.precio_l1 > 0 ? (diff / it.precio_l1) * 100 : 0;
+          if (Math.abs(pctVal) >= 40 || (Math.abs(diff) >= 20000 && Math.abs(pctVal) >= 30)) {
+            isSevereDiscrepancy = true;
+          }
           if (diff > 0.01) {
-            diffBadge = `<span class="bg-rose-100 text-rose-900 font-extrabold px-3 py-1.5 rounded-lg text-xs border border-rose-300 flex items-center justify-center gap-1 shadow-2xs">🔺 Subió +$${diff.toLocaleString('es-AR', {minimumFractionDigits: 2})} (+${pct.toFixed(1)}%)</span>`;
+            diffBadge = `<span class="bg-rose-100 text-rose-900 font-extrabold px-3 py-1.5 rounded-lg text-xs border border-rose-300 flex items-center justify-center gap-1 shadow-2xs">🔺 Subió +$${diff.toLocaleString('es-AR', {minimumFractionDigits: 2})} (+${pctVal.toFixed(1)}%)</span>`;
           } else if (diff < -0.01) {
-            diffBadge = `<span class="bg-emerald-100 text-emerald-900 font-extrabold px-3 py-1.5 rounded-lg text-xs border border-emerald-300 flex items-center justify-center gap-1 shadow-2xs">🔻 Bajó -$${Math.abs(diff).toLocaleString('es-AR', {minimumFractionDigits: 2})} (${pct.toFixed(1)}%)</span>`;
+            diffBadge = `<span class="bg-emerald-100 text-emerald-900 font-extrabold px-3 py-1.5 rounded-lg text-xs border border-emerald-300 flex items-center justify-center gap-1 shadow-2xs">🔻 Bajó -$${Math.abs(diff).toLocaleString('es-AR', {minimumFractionDigits: 2})} (${pctVal.toFixed(1)}%)</span>`;
           } else {
             diffBadge = `<span class="bg-slate-200 text-slate-800 font-bold px-3 py-1.5 rounded-lg text-xs border border-slate-300 flex items-center justify-center gap-1">🟢 Mismo precio</span>`;
           }
@@ -915,7 +919,10 @@ class PriceComparatorApp {
         itemsHtml += `
           <div class="px-3.5 sm:px-4 py-3.5 ${bgClass} hover:bg-sky-50 transition-colors border-b border-slate-300 last:border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div class="space-y-2 flex-1 max-w-2xl">
-              <div class="font-black text-slate-950 text-sm sm:text-base tracking-tight leading-snug">${it.producto}</div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-black text-slate-950 text-sm sm:text-base tracking-tight leading-snug">${it.producto}</span>
+                ${isSevereDiscrepancy ? `<span class="bg-amber-100 border border-amber-400 text-amber-950 font-extrabold px-2 py-0.5 rounded text-[10px] flex items-center gap-1 shadow-2xs" title="Variación muy alta. Verificá si corresponden a la misma presentación.">⚠️ Variación elevada (${pctVal > 0 ? '+' : ''}${pctVal.toFixed(0)}%)</span>` : ''}
+              </div>
               
               <!-- Nombres exactos de cada lista comparada -->
               <div class="flex flex-col sm:flex-row flex-wrap gap-1.5 text-[11px] bg-slate-50/90 p-2 rounded-xl border border-slate-200">
@@ -929,6 +936,9 @@ class PriceComparatorApp {
                 ${it.codigo ? `<span class="bg-white border border-slate-300 text-slate-700 font-mono px-2 py-0.5 rounded shadow-2xs font-semibold">Cód: ${it.codigo}</span>` : ''}
                 ${it.presentacion ? `<span class="bg-white border border-slate-300 text-slate-700 px-2 py-0.5 rounded shadow-2xs font-semibold">Pres: ${it.presentacion}</span>` : ''}
                 ${it.es_dudoso ? `<span class="bg-amber-100 border border-amber-400 text-amber-950 font-bold px-2 py-0.5 rounded">⚠️ Similar</span>` : ''}
+                <button onclick="window.app.openProductModal(${it._filteredIndex})" class="text-[11px] font-bold text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-2 py-0.5 rounded transition flex items-center gap-1 ml-1">
+                  <i data-lucide="eye" class="w-3 h-3"></i> Ver Detalles / Separar
+                </button>
               </div>
             </div>
             
@@ -961,119 +971,8 @@ class PriceComparatorApp {
     lucide.createIcons();
   }
 
-  renderTablePage() {
-    const tbody = document.getElementById('tbody-products') || document.getElementById('tbody-comparison-rows');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    const total = this.filteredRows ? this.filteredRows.length : 0;
-    const startIdx = (this.currentPage - 1) * this.pageSize;
-    const endIdx = Math.min(startIdx + this.pageSize, total);
-    const pageRows = (this.filteredRows || []).slice(startIdx, endIdx);
-    const maxPages = Math.ceil(total / this.pageSize) || 1;
-
-    const countInfo = document.getElementById('txt-pagination-info');
-    if (countInfo) {
-      countInfo.innerText = `Mostrando ${total > 0 ? startIdx + 1 : 0} a ${endIdx} de ${total.toLocaleString()} productos`;
-    }
-    const pageInfo = document.getElementById('txt-current-page');
-    if (pageInfo) {
-      pageInfo.innerText = `${this.currentPage} / ${maxPages}`;
-    }
-    const btnPrev = document.getElementById('btn-prev-page');
-    const btnNext = document.getElementById('btn-next-page');
-    if (btnPrev) btnPrev.disabled = this.currentPage <= 1;
-    if (btnNext) btnNext.disabled = this.currentPage >= maxPages;
-
-    pageRows.forEach((r, i) => {
-      const globalRowIdx = startIdx + i;
-      const rowNum = globalRowIdx + 1;
-      const isEven = (i % 2 === 0);
-      const rowClass = isEven ? 'bg-white' : 'bg-slate-100/90';
-
-      const minP = r.precio_min;
-      const p1Str = r.precio_l1 !== null ? `$${r.precio_l1.toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '<span class="text-slate-400 italic">No disponible</span>';
-      const p2Str = r.precio_l2 !== null ? `$${r.precio_l2.toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '<span class="text-slate-400 italic">No disponible</span>';
-      const p3Str = r.precio_l3 !== null ? `$${r.precio_l3.toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '<span class="text-slate-400 italic">No disponible</span>';
-
-      const isP1Best = (r.precio_l1 !== null && minP !== null && Math.abs(r.precio_l1 - minP) < 0.001 && (r.precio_l2 !== null || r.precio_l3 !== null));
-      const isP2Best = (r.precio_l2 !== null && minP !== null && Math.abs(r.precio_l2 - minP) < 0.001 && (r.precio_l1 !== null || r.precio_l3 !== null));
-      const isP3Best = (r.precio_l3 !== null && minP !== null && Math.abs(r.precio_l3 - minP) < 0.001 && (r.precio_l1 !== null || r.precio_l2 !== null));
-
-      let pctBadgeClass = 'bg-slate-100 text-slate-700 border border-slate-300';
-      if (r.diferencia_porcentaje > 35) {
-        pctBadgeClass = 'bg-rose-100 text-rose-900 font-black border border-rose-300';
-      } else if (r.diferencia_porcentaje > 15) {
-        pctBadgeClass = 'bg-amber-100 text-amber-900 font-bold border border-amber-300';
-      } else if (r.diferencia_porcentaje > 0) {
-        pctBadgeClass = 'bg-emerald-100 text-emerald-900 font-bold border border-emerald-300';
-      }
-
-      const tr = document.createElement('tr');
-      tr.className = `${rowClass} hover:bg-sky-50 border-b border-slate-300 transition-colors cursor-pointer`;
-      tr.title = "Hacé clic para ver el desglose completo del producto";
-      tr.onclick = () => this.openProductModal(globalRowIdx);
-
-      tr.innerHTML = `
-        <td class="py-3 px-3 text-center font-mono text-[11px] font-bold text-slate-500 border-r border-slate-200">
-          ${rowNum}
-        </td>
-        <td class="py-3 px-3 border-r border-slate-200">
-          <div class="font-bold text-slate-900 text-xs">${r.producto}</div>
-          <div class="text-[10px] text-slate-500 flex flex-col gap-0.5 mt-1">
-            ${r.desc_l1 ? `<span><b>${this.configs[0].nombre}:</b> ${r.desc_l1}</span>` : ''}
-            ${r.desc_l2 ? `<span><b>${this.configs[1].nombre}:</b> ${r.desc_l2}</span>` : ''}
-          </div>
-        </td>
-        <td class="py-3 px-2 text-slate-600 font-mono text-[11px]">${r.codigo || '-'}</td>
-        <td class="py-3 px-2 text-slate-700 font-medium">${r.marca || '-'}</td>
-        <td class="py-3 px-2 text-slate-600">${r.presentacion || '-'}</td>
-        
-        <td class="py-3 px-3 text-right font-medium ${isP1Best ? 'bg-emerald-100 text-emerald-950 font-black' : 'text-slate-800'}">
-          ${isP1Best ? '<span class="text-emerald-700 font-black mr-1">✓</span>' : ''}${p1Str}
-        </td>
-        <td class="py-3 px-3 text-right font-medium ${isP2Best ? 'bg-emerald-100 text-emerald-950 font-black' : 'text-slate-800'}">
-          ${isP2Best ? '<span class="text-emerald-700 font-black mr-1">✓</span>' : ''}${p2Str}
-        </td>
-        <td class="py-3 px-3 text-right font-medium ${isP3Best ? 'bg-emerald-100 text-emerald-950 font-black' : 'text-slate-800'}">
-          ${isP3Best ? '<span class="text-emerald-700 font-black mr-1">✓</span>' : ''}${p3Str}
-        </td>
-
-        <td class="py-3 px-3 text-center font-bold text-emerald-950 bg-emerald-50 border-x border-slate-200 truncate max-w-[140px]">${r.proveedor_mas_barato}</td>
-        <td class="py-3 px-3 text-right font-bold text-slate-900">$${r.diferencia_dinero.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-        <td class="py-3 px-3 text-right">
-          <span class="px-2 py-0.5 rounded text-[11px] ${pctBadgeClass}" title="${r.explicacion_porcentaje}">
-            ${r.diferencia_porcentaje.toFixed(2)}%
-          </span>
-        </td>
-        <td class="py-3 px-2 text-center">
-          <button class="text-sky-600 hover:text-sky-800 p-1 rounded hover:bg-sky-100" title="Ver detalle"><i data-lucide="eye" class="w-4 h-4"></i></button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    lucide.createIcons();
-  }
-
-  prevPage() {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      this.renderTablePage();
-    }
-  }
-
-  nextPage() {
-    const total = this.filteredRows ? this.filteredRows.length : 0;
-    const maxPages = Math.ceil(total / this.pageSize) || 1;
-    if (this.currentPage < maxPages) {
-      this.currentPage++;
-      this.renderTablePage();
-    }
-  }
-
   // ========================================================
-  // MODAL DETALLE DE PRODUCTO
+  // MODAL DETALLE DE PRODUCTO Y DESVINCULACIÓN
   // ========================================================
   openProductModal(rowIndex) {
     const r = this.filteredRows[rowIndex];
@@ -1082,6 +981,23 @@ class PriceComparatorApp {
     document.getElementById('modal-status-badge').innerText = r.estado_precio;
     document.getElementById('modal-product-title').innerText = r.producto;
     document.getElementById('modal-product-meta').innerText = `Código: ${r.codigo || 'Sin código'} | Marca: ${r.marca || 'N/A'} | Presentación: ${r.presentacion || 'N/A'}`;
+
+    // Alerta de Discrepancia Elevada
+    const alertBox = document.getElementById('modal-alert-discrepancy');
+    const descText = document.getElementById('modal-alert-discrepancy-desc');
+    const isSevere = (r.precio_l1 && r.precio_l2 && Math.abs((r.precio_l2 - r.precio_l1) / r.precio_l1) >= 0.38) || (r.diferencia_porcentaje >= 40);
+
+    if (isSevere && alertBox) {
+      alertBox.classList.remove('hidden');
+      if (descText) {
+        descText.innerHTML = `
+          El precio varía un <b>${r.diferencia_porcentaje.toFixed(1)}%</b> entre proveedores (diferencia de <b>$${r.diferencia_dinero.toLocaleString('es-AR', {minimumFractionDigits: 2})}</b>). 
+          Verificá si un proveedor vende por unidad suelta y otro por caja/bulto, o si el peso difiere. Si son artículos distintos, hacé clic en <b>"Separar este producto"</b> abajo.
+        `;
+      }
+    } else if (alertBox) {
+      alertBox.classList.add('hidden');
+    }
 
     const provContainer = document.getElementById('modal-providers-breakdown');
     provContainer.innerHTML = '';
@@ -1094,6 +1010,7 @@ class PriceComparatorApp {
 
     listKeys.forEach(item => {
       const cfg = this.configs[item.idx];
+      if (!cfg || !this.uploadedFiles[item.idx]) return;
       const isBest = (item.p !== null && r.precio_min !== null && Math.abs(item.p - r.precio_min) < 0.001);
       
       const card = document.createElement('div');
@@ -1103,11 +1020,10 @@ class PriceComparatorApp {
           <span>${cfg.nombre}</span>
           ${isBest ? '<span class="bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">Más Barato</span>' : ''}
         </div>
-        <div class="space-y-1 text-[11px] text-slate-600">
-          <div><b>Precio Efectivo:</b> <span class="font-bold ${isBest ? 'text-emerald-800 text-sm' : 'text-slate-800'}">${item.p !== null ? '$' + item.p.toLocaleString('es-AR', {minimumFractionDigits: 2}) : 'No disponible'}</span></div>
-          <div><b>Precio Original:</b> ${item.p_orig !== null ? '$' + item.p_orig.toLocaleString('es-AR', {minimumFractionDigits: 2}) : '-'}</div>
-          <div><b>Código:</b> ${item.code || '-'}</div>
-          <div class="truncate" title="${item.desc}"><b>Desc:</b> ${item.desc || '-'}</div>
+        <div class="space-y-1.5 text-xs text-slate-700">
+          <div><b class="text-slate-500">Precio:</b> <span class="font-extrabold ${isBest ? 'text-emerald-800 text-sm' : 'text-slate-900'}">${item.p !== null ? '$' + item.p.toLocaleString('es-AR', {minimumFractionDigits: 2}) : 'No presente'}</span></div>
+          <div><b class="text-slate-500">Código:</b> ${item.code || '-'}</div>
+          <div class="pt-1 border-t border-slate-200"><b class="text-slate-500 block text-[10px] uppercase">Nombre Original:</b> <span class="font-semibold text-slate-900">${item.desc || '<i class="text-slate-400">No presente en este proveedor</i>'}</span></div>
         </div>
       `;
       provContainer.appendChild(card);
@@ -1116,7 +1032,7 @@ class PriceComparatorApp {
     const diffContainer = document.getElementById('modal-diff-breakdown');
     diffContainer.innerHTML = `
       <div class="flex items-center justify-between">
-        <span class="font-semibold text-slate-700">Diferencia monetaria (Ahorro directo):</span>
+        <span class="font-semibold text-slate-700">Diferencia monetaria:</span>
         <span class="font-black text-slate-900 text-sm">$${r.diferencia_dinero.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
       </div>
       <div class="flex items-center justify-between">
@@ -1126,8 +1042,38 @@ class PriceComparatorApp {
       <p class="text-[11px] text-slate-500 pt-1 border-t border-slate-200 mt-1">${r.explicacion_porcentaje}</p>
     `;
 
+    // Acciones de Desvinculación
+    const actionsContainer = document.getElementById('modal-actions-container');
+    if (actionsContainer) {
+      actionsContainer.innerHTML = '';
+      if (r.present_count > 1) {
+        const unlinkBtn = document.createElement('button');
+        unlinkBtn.className = "bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition";
+        unlinkBtn.innerHTML = `<i data-lucide="split" class="w-4 h-4"></i> Separar este producto`;
+        unlinkBtn.onclick = () => this.unlinkAndCloseModal(r.group_id);
+        actionsContainer.appendChild(unlinkBtn);
+      }
+      if (r.es_dudoso) {
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = "bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition";
+        confirmBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Confirmar como mismo artículo`;
+        confirmBtn.onclick = () => this.confirmAndCloseModal(r.group_id);
+        actionsContainer.appendChild(confirmBtn);
+      }
+    }
+
     document.getElementById('product-detail-modal').classList.remove('hidden');
     lucide.createIcons();
+  }
+
+  async unlinkAndCloseModal(groupId) {
+    document.getElementById('product-detail-modal').classList.add('hidden');
+    await this.overrideMatch(groupId, 'unlink');
+  }
+
+  async confirmAndCloseModal(groupId) {
+    document.getElementById('product-detail-modal').classList.add('hidden');
+    await this.overrideMatch(groupId, 'confirm');
   }
 
   // ========================================================

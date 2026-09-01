@@ -381,29 +381,44 @@
 
   </main>
 
-  <!-- MODAL: DETALLE DE PRODUCTO Y DESGLOSE COMPLETO -->
-  <div id="product-detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-150">
-      <div class="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+  <!-- MODAL: DETALLE DE PRODUCTO, ADVERTENCIAS Y DESVINCULACIÓN -->
+  <div id="product-detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-150 max-h-[92vh] flex flex-col">
+      <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
         <div>
           <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-100 text-sky-800" id="modal-status-badge">Comparación Directa</span>
-          <h3 class="text-base font-bold text-slate-800 mt-1" id="modal-product-title">Nombre del Producto</h3>
+          <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1 leading-snug" id="modal-product-title">Nombre del Producto</h3>
           <p class="text-xs text-slate-500" id="modal-product-meta">Código: - | Marca: - | Presentación: -</p>
         </div>
-        <button onclick="document.getElementById('product-detail-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition">
+        <button onclick="document.getElementById('product-detail-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-200 transition">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div class="p-6 space-y-4">
-        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Desglose por Proveedor</h4>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="modal-providers-breakdown"></div>
+      <div class="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
+        
+        <!-- Banner de Advertencia por Discrepancia Elevada de Precios -->
+        <div id="modal-alert-discrepancy" class="hidden bg-amber-50 border-2 border-amber-300 rounded-xl p-3.5 flex items-start gap-3">
+          <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
+          <div class="text-xs text-amber-950 space-y-1">
+            <h5 class="font-extrabold text-amber-900" id="modal-alert-discrepancy-title">⚠️ ¡Atención! Variación de precio muy elevada</h5>
+            <p id="modal-alert-discrepancy-desc">
+              Existe una gran diferencia de precio entre las listas. Comprobá si un proveedor vende por unidad y otro por pack, o si los kilos son diferentes. Si no son el mismo artículo, podés separarlos abajo.
+            </p>
+          </div>
+        </div>
+
+        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Comparación de Nombres y Precios</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="modal-providers-breakdown"></div>
 
         <div class="bg-slate-50 border border-slate-200 p-3.5 rounded-xl space-y-2 text-xs" id="modal-diff-breakdown"></div>
       </div>
 
-      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
-        <button onclick="document.getElementById('product-detail-modal').classList.add('hidden')" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+      <div class="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div id="modal-actions-container" class="flex items-center gap-2">
+          <!-- Botón de Separar Dinámico -->
+        </div>
+        <button onclick="document.getElementById('product-detail-modal').classList.add('hidden')" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition">
           Cerrar
         </button>
       </div>
