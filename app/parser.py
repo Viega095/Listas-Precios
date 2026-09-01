@@ -4,6 +4,7 @@ import csv
 import pandas as pd
 import openpyxl
 from typing import List, Dict, Any, Tuple, Optional
+from app.normalizer import parse_price
 
 # Diccionario de alias exactos y patrones para detección automática de columnas
 COLUMN_SYNONYMS = {
@@ -67,10 +68,10 @@ def clean_column_name(col: str) -> str:
     col = re.sub(r'[^a-z0-9_%]', '', col)
     return col
 
-def detect_column_mapping(columns: List[str]) -> Dict[str, Optional[str]]:
+def detect_column_mapping(columns: List[str], df: Optional[pd.DataFrame] = None) -> Dict[str, Optional[str]]:
     """
     Intenta mapear automáticamente las columnas del archivo a los campos estándar.
-    Retorna un diccionario de campo_estandar -> nombre_columna_original.
+    Utiliza sinónimos y, si se provee el DataFrame, realiza auto-inferencia analizando el contenido real.
     """
     mapping: Dict[str, Optional[str]] = {
         "codigo": None,
@@ -108,14 +109,62 @@ def detect_column_mapping(columns: List[str]) -> Dict[str, Optional[str]]:
             if orig_col in used_original_cols:
                 continue
             for syn in synonyms:
-                # Solo buscar substring si el sinónimo tiene al menos 4 caracteres para evitar falsos positivos
                 if len(syn) >= 4 and (syn in clean_col or clean_col in syn):
                     mapping[standard_field] = orig_col
                     used_original_cols.add(orig_col)
                     break
             if mapping[standard_field] is not None:
                 break
-                
+
+    # 3. Tercera pasada: Auto-detección inteligente por inspección de contenido
+    if df is not None and len(df) > 0:
+        # 3.1. Si falta precio: encontrar la columna con más valores monetarios/numéricos
+        if mapping["precio"] is None and mapping["precio_final"] is None:
+            best_price_col = None
+            best_price_count = 0
+            for col in columns:
+                if col in used_original_cols and col == mapping.get("descripcion"):
+                    continue
+                sample_vals = df[col].dropna().astype(str).tolist()[:50]
+                valid_p = sum(1 for v in sample_vals if parse_price(v) > 0)
+                if valid_p > best_price_count and valid_p >= max(1, int(len(sample_vals) * 0.2)):
+                    best_price_count = valid_p
+                    best_price_col = col
+                    
+            if best_price_col:
+                mapping["precio"] = best_price_col
+                used_original_cols.add(best_price_col)
+
+        # 3.2. Si falta descripción: encontrar la columna con texto descriptivo más representativo
+        if mapping["descripcion"] is None:
+            best_desc_col = None
+            best_desc_len = 0
+            for col in columns:
+                if col in used_original_cols and col == mapping.get("precio"):
+                    continue
+                sample_vals = df[col].dropna().astype(str).tolist()[:50]
+                has_letters = any(re.search(r'[A-Za-z]', v) for v in sample_vals)
+                avg_len = sum(len(v.strip()) for v in sample_vals) / max(1, len(sample_vals))
+                if has_letters and avg_len > best_desc_len:
+                    best_desc_len = avg_len
+                    best_desc_col = col
+                    
+            if best_desc_col:
+                mapping["descripcion"] = best_desc_col
+                used_original_cols.add(best_desc_col)
+
+        # 3.3. Si falta código: detectar columna con códigos alfanuméricos cortos o EAN
+        if mapping["codigo"] is None and mapping["codigo_barras"] is None:
+            for col in columns:
+                if col in used_original_cols:
+                    continue
+                sample_vals = df[col].dropna().astype(str).tolist()[:50]
+                if sample_vals and all(len(v.strip()) <= 20 for v in sample_vals if v.strip()):
+                    if any(len(v.strip()) >= 3 for v in sample_vals):
+                        mapping["codigo"] = col
+                        used_original_cols.add(col)
+                        break
+
     return mapping
 
 def detect_csv_dialect_and_encoding(file_bytes: bytes) -> Tuple[str, str, str]:
@@ -194,7 +243,7 @@ def parse_file_to_dataframe(file_bytes: bytes, filename: str) -> Tuple[pd.DataFr
         raise RuntimeError(f"Error al leer el archivo {filename}: {str(e)}")
 
 def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
-    """Extrae texto estructurado y tablas de un PDF usando pypdf."""
+    """Extrae texto estructurado y tablas de un PDF usando pypdf con análisis de patrones de producto y precio."""
     from pypdf import PdfReader
     
     reader = PdfReader(io.BytesIO(file_bytes))
@@ -214,55 +263,86 @@ def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
         raise ValueError("El archivo PDF no contiene texto extraíble o es un documento escaneado sin OCR.")
         
     parsed_rows = []
-    price_pattern = re.compile(r'(\$?\s*\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?|\$?\s*\d+(?:[.,]\d{1,2})?)\s*$')
+    
+    # Patrón de precio en cualquier posición (formato argentino y estándar)
+    PRICE_REGEX = re.compile(r'(\$?\s*\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})|\$?\s*\d+(?:[.,]\d{1,2})?)')
+    IGNORE_KEYWORDS = ['pagina', 'página', 'hoja', 'vigencia', 'lista de precio', 'telefono', 'teléfono', 'cuit', 'total general', 'subtotal']
 
     for l in all_lines:
-        if '\t' in l:
-            parts = [p.strip() for p in l.split('\t') if p.strip()]
-        elif '|' in l:
-            parts = [p.strip() for p in l.split('|') if p.strip()]
-        elif ';' in l:
-            parts = [p.strip() for p in l.split(';') if p.strip()]
+        line_clean = l.strip()
+        if not line_clean or len(line_clean) < 3:
+            continue
+            
+        line_lower = line_clean.lower()
+        if any(line_lower.startswith(k) for k in IGNORE_KEYWORDS) and not re.search(r'\d{3,}', line_clean):
+            continue
+            
+        if re.search(r'^(?:lista\s+de\s+precios?|catalogo|precios\s+vigentes|tarifa\s+de\s+precios)\b', line_lower):
+            continue
+
+        # Separar por delimitadores comunes si existen
+        if '\t' in line_clean:
+            parts = [p.strip() for p in line_clean.split('\t') if p.strip()]
+        elif '|' in line_clean:
+            parts = [p.strip() for p in line_clean.split('|') if p.strip()]
+        elif ';' in line_clean:
+            parts = [p.strip() for p in line_clean.split(';') if p.strip()]
         else:
-            # Separar por múltiples espacios
-            parts = [p.strip() for p in re.split(r'\s{2,}', l) if p.strip()]
-            if len(parts) <= 1:
-                # Intentar extraer precio al final de la línea
-                match_p = price_pattern.search(l)
-                if match_p and match_p.start() > 0:
-                    desc_part = l[:match_p.start()].strip()
-                    price_part = match_p.group(1).replace('$', '').strip()
-                    # Verificar si la descripción empieza con un código alfanumérico
-                    match_code = re.match(r'^([A-Za-z0-9_-]{3,15})\s+(.+)$', desc_part)
-                    if match_code:
-                        parts = [match_code.group(1), match_code.group(2), price_part]
-                    else:
-                        parts = [desc_part, price_part]
+            parts = [p.strip() for p in re.split(r'\s{2,}', line_clean) if p.strip()]
+            
+        if len(parts) >= 2:
+            # Encontrar precio entre las columnas
+            price_val = None
+            price_idx = -1
+            for idx in reversed(range(len(parts))):
+                pv = parse_price(parts[idx])
+                if pv > 0:
+                    price_val = pv
+                    price_idx = idx
+                    break
+                    
+            if price_val is not None:
+                non_price = [parts[j] for j in range(len(parts)) if j != price_idx]
+                code = ""
+                desc = ""
+                if len(non_price) >= 2 and (non_price[0].isdigit() or re.match(r'^[A-Za-z0-9_-]{2,15}$', non_price[0])):
+                    code = non_price[0]
+                    desc = " ".join(non_price[1:])
                 else:
-                    parts = [l]
-        if parts:
-            parsed_rows.append(parts)
-        
-    max_cols = max((len(r) for r in parsed_rows), default=1)
-    if max_cols > 1:
-        if max_cols == 2:
-            headers = ["Detalle_Producto", "Precio"]
-        elif max_cols == 3:
-            headers = ["Codigo", "Detalle_Producto", "Precio"]
-        else:
-            headers = [f"Columna_{i+1}" for i in range(max_cols)]
-            
-        if len(parsed_rows[0]) == max_cols and not any(re.search(r'\d', str(x)) for x in parsed_rows[0]):
-            headers = parsed_rows[0]
-            data_rows = parsed_rows[1:]
-        else:
-            data_rows = parsed_rows
-            
-        padded_rows = []
-        for r in data_rows:
-            padded = r + [''] * (max_cols - len(r))
-            padded_rows.append(padded[:max_cols])
-            
-        return pd.DataFrame(padded_rows, columns=headers)
+                    desc = " ".join(non_price)
+                    
+                if desc and len(desc) >= 2:
+                    parsed_rows.append({
+                        "Codigo": code,
+                        "Detalle_Producto": desc,
+                        "Precio": str(price_val)
+                    })
+                    continue
+
+        # Si vino como una sola línea continua, extraer precio con regex
+        matches = list(PRICE_REGEX.finditer(line_clean))
+        if matches:
+            last_m = matches[-1]
+            pv = parse_price(last_m.group(1))
+            if pv > 0:
+                text_part = (line_clean[:last_m.start()] + " " + line_clean[last_m.end():]).strip()
+                code_m = re.match(r'^([A-Za-z0-9_-]{3,15})\s+(.+)$', text_part)
+                if code_m and not code_m.group(1).isalpha():
+                    code = code_m.group(1)
+                    desc = code_m.group(2).strip()
+                else:
+                    code = ""
+                    desc = text_part
+                    
+                if desc and len(desc) >= 2:
+                    parsed_rows.append({
+                        "Codigo": code,
+                        "Detalle_Producto": desc,
+                        "Precio": str(pv)
+                    })
+
+    if parsed_rows:
+        return pd.DataFrame(parsed_rows)
     else:
-        return pd.DataFrame({'Texto': all_lines})
+        # Fallback estructurado
+        return pd.DataFrame({'Detalle_Producto': all_lines, 'Precio': ['0.0'] * len(all_lines)})

@@ -33,7 +33,7 @@ async def upload_file_handler(list_idx: int = 0, file: UploadFile = File(...)):
         if df.empty:
             raise HTTPException(status_code=400, detail=f"El archivo {filename} está vacío o no contiene filas válidas.")
             
-        detected_map = detect_column_mapping(columns)
+        detected_map = detect_column_mapping(columns, df)
         df_clean = df.fillna("")
         records = df_clean.to_dict(orient="records")
         preview_rows = df_clean.head(10).to_dict(orient="records")
