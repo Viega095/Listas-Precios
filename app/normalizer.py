@@ -191,6 +191,16 @@ def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_numb
     clean_code = re.sub(r'[^0-9A-Za-z]', '', codigo)
     clean_sku = re.sub(r'[^0-9A-Za-z]', '', sku)
     
+    # Si no vino código de barras explícito, pero el código o SKU es un EAN estándar (8 a 14 dígitos)
+    if not clean_barcode:
+        if clean_code.isdigit() and 8 <= len(clean_code) <= 14:
+            clean_barcode = clean_code
+        elif clean_sku.isdigit() and 8 <= len(clean_sku) <= 14:
+            clean_barcode = clean_sku
+            
+    if not clean_code and clean_barcode:
+        clean_code = clean_barcode
+    
     # Marca normalizada
     clean_brand = remove_accents_and_clean(marca)
 

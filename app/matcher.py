@@ -193,10 +193,13 @@ class ProductMatcher:
             match_status = "exclusivo"
 
         first_item = items[0]
-        canonical_desc = first_item['descripcion_orig'] or first_item['normalized_title']
-        canonical_code = first_item['codigo_orig'] or first_item['codigo_barras_orig'] or first_item['sku_orig']
-        canonical_brand = next((it['marca_orig'] for it in items if it['marca_orig']), "")
-        canonical_presentacion = next((it['presentacion_orig'] for it in items if it['presentacion_orig']), "")
+        # Elegir la descripción original más completa y legible
+        descs = [it['descripcion_orig'] for it in items if it.get('descripcion_orig') and len(it['descripcion_orig'].strip()) > 3]
+        canonical_desc = max(descs, key=len) if descs else (first_item['descripcion_orig'] or first_item['normalized_title'])
+        
+        canonical_code = next((it['codigo_barras_orig'] or it['codigo_orig'] or it['sku_orig'] for it in items if (it.get('codigo_barras_orig') or it.get('codigo_orig') or it.get('sku_orig'))), "")
+        canonical_brand = next((it['marca_orig'] for it in items if it.get('marca_orig')), "")
+        canonical_presentacion = next((it['presentacion_orig'] for it in items if it.get('presentacion_orig')), "")
 
         return {
             "group_id": group_id,

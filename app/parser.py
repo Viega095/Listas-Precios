@@ -9,7 +9,8 @@ from typing import List, Dict, Any, Tuple, Optional
 COLUMN_SYNONYMS = {
     "codigo_barras": [
         "codigo_barras", "cod_barras", "código_barras", "código_de_barras", "barcode", 
-        "ean", "ean13", "ean-13", "ean_13", "gtin", "upc", "cod_barra"
+        "ean", "ean13", "ean-13", "ean_13", "gtin", "upc", "cod_barra", "codigo_ean", 
+        "cod_ean", "codigo_de_barra", "codigo_barra", "cod_bar", "cod_ean13"
     ],
     "sku": [
         "sku", "sku_interno", "part_number", "nro_parte", "num_parte"
