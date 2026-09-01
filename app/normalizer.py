@@ -57,6 +57,21 @@ def remove_accents_and_clean(text: str) -> str:
     # Reemplazar caracteres no alfanuméricos por espacios
     text = re.sub(r'[^a-z0-9\.,]', ' ', text)
     text = re.sub(r'\s+', ' ', text).strip()
+    
+    # Unificar variantes compuestas de marcas comerciales frecuentes
+    text = re.sub(r'\bnext\s*gard\b', 'nexgard', text)
+    text = re.sub(r'\bnextgard\b', 'nexgard', text)
+    text = re.sub(r'\b9\s*lives\b', '9lives', text)
+    text = re.sub(r'\bnine\s*lives\b', '9lives', text)
+    text = re.sub(r'\bcat\s*pro\b', 'catpro', text)
+    text = re.sub(r'\bdog\s*pro\b', 'dogpro', text)
+    text = re.sub(r'\bmichi\s*feliz\b', 'michifeliz', text)
+    text = re.sub(r'\btotal\s*balance\b', 'totalbalance', text)
+    text = re.sub(r'\bgran\s*campeon\b', 'grancampeon', text)
+    text = re.sub(r'\bmaster\s*food\b', 'masterfood', text)
+    text = re.sub(r'\bsaladillo\s*pets\b', 'saladillopets', text)
+    text = re.sub(r'\bla\s*palmera\b', 'lapalmera', text)
+    text = re.sub(r'\banimal\s*pet\b', 'animalpet', text)
     return text
 
 def parse_price(value: Any) -> float:
@@ -210,11 +225,14 @@ BRAND_CANONICAL_MAP = {
     'kongo': 'Kongo',
     'biopet': 'Biopet',
     'catpro': 'Catpro',
+    'cat pro': 'Catpro',
     'dogpro': 'Dogpro',
+    'dog pro': 'Dogpro',
     'eukanuba': 'Eukanuba',
     'eukanuba b.ch': 'Eukanuba',
     'eukanuba bch': 'Eukanuba',
     'pedigree': 'Pedigree',
+    'pedigre': 'Pedigree',
     'whiskas': 'Whiskas',
     'excellent': 'Excellent',
     'excelent': 'Excellent',
@@ -223,6 +241,8 @@ BRAND_CANONICAL_MAP = {
     'simparica': 'Simparica',
     'nexgard': 'Nexgard',
     'nextgard': 'Nexgard',
+    'next gard': 'Nexgard',
+    'next': 'Nexgard',
     'bravecto': 'Bravecto',
     'ospret': 'Ospret',
     'osprett': 'Ospret',
@@ -237,6 +257,51 @@ BRAND_CANONICAL_MAP = {
     'agility': 'Agility',
     'sieger': 'Sieger',
     'frontline': 'Frontline',
+    '9 lives': '9 Lives',
+    '9lives': '9 Lives',
+    'nine lives': '9 Lives',
+    'gati': 'Gati',
+    'fawna': 'Fawna',
+    'mon ami': 'Mon Ami',
+    'infinity': 'Infinity',
+    'infity': 'Infinity',
+    'hop!': 'Hop!',
+    'hop': 'Hop!',
+    'catlike': 'Catlike',
+    'canactive': 'Canactive',
+    'advance': 'Advance',
+    'bonzo': 'Bonzo',
+    'bonello': 'Bonello',
+    'gandum': 'Gandum',
+    'michi feliz': 'Michi Feliz',
+    'michi': 'Michi Feliz',
+    'minino': 'Minino',
+    'belcan': 'Belcan',
+    'loyal cat': 'Loyal Cat',
+    'loyal': 'Loyal Cat',
+    'protemix': 'Protemix',
+    'gran campeon': 'Gran Campeon',
+    'master food': 'Master Food',
+    'master': 'Master Food',
+    'metrive': 'Metrive',
+    'saladillo pets': 'Saladillo Pets',
+    'saladillo': 'Saladillo Pets',
+    'vitalcrops': 'Vitalcrops',
+    'la palmera': 'La Palmera (Forrajería)',
+    'palmera': 'La Palmera (Forrajería)',
+    'bb iniciador': 'La Palmera (Forrajería)',
+    'engorde': 'La Palmera (Forrajería)',
+    'ponedora': 'La Palmera (Forrajería)',
+    'animal pet': 'Animal Pet',
+    'virupack': 'Virupack',
+    'viruta': 'Heno y Virutas',
+    'virutas': 'Heno y Virutas',
+    'heno': 'Heno y Virutas',
+    'alfalfa': 'Heno y Virutas',
+    'kil': 'Kil (Antiparasitarios)',
+    'iams': 'Iams',
+    'rodeo': 'Rodeo',
+    'total balance': 'Total Balance',
     'coca cola': 'Coca-Cola',
     'coca-cola': 'Coca-Cola',
     'la serenisima': 'La Serenísima',
@@ -249,33 +314,62 @@ BRAND_CANONICAL_MAP = {
     'h&s': 'Head & Shoulders'
 }
 
+def detect_brand_and_category(descripcion: str, explicit_marca: str = "") -> str:
+    """Detecta con máxima precisión la marca comercial o clasifica en categoría funcional."""
+    if explicit_marca and len(explicit_marca.strip()) > 2 and explicit_marca.lower() not in ('sin marca', 'general', 'otros'):
+        clean_m = remove_accents_and_clean(explicit_marca)
+        if clean_m in BRAND_CANONICAL_MAP:
+            return BRAND_CANONICAL_MAP[clean_m]
+        return explicit_marca.strip().title()
+        
+    desc_lwr = descripcion.lower()
+    
+    # 1. Chequear marcas comerciales directas en el texto
+    for brand_key, canonical_name in BRAND_CANONICAL_MAP.items():
+        if re.search(r'\b' + re.escape(brand_key) + r'\b', desc_lwr):
+            return canonical_name
+            
+    # 2. Categorías funcionales de Pet Shop
+    if re.search(r'\b(comedero|bebedero|botella|plato|tolva|comelento)\b', desc_lwr):
+        return "Accesorios y Comederos"
+    if re.search(r'\b(collar|correa|pechera|pretal|bozal|bolso|mochila|transportadora)\b', desc_lwr):
+        return "Paseo y Transporte"
+    if re.search(r'\b(juguete|pelota|pelotas|chifle|chiche|soga|rascador)\b', desc_lwr):
+        return "Juguetes y Rascadores"
+    if re.search(r'\b(bandeja|litera|palita|sanitaria|arena|piedra|piedras|silica|silicas)\b', desc_lwr):
+        return "Piedras y Bandejas Sanitarias"
+    if re.search(r'\b(shampoo|enjuague|jabon|talco|perfume|colonia|limpia patas|quita pelusa|cepillo|peine|cortaunas|repuesto bolsa|bolsa basura|hueso\+\s*bolsa|seda)\b', desc_lwr):
+        return "Higiene y Cosmética"
+    if re.search(r'\b(snack|snacks|bocadito|bocaditos|dentastix|biscrok|hueso|huesos|huesito|huesitos|oreja|orejas|grisines|palito|palitos|glicines|biscuit)\b', desc_lwr):
+        return "Snacks y Golosinas"
+    if re.search(r'\b(curabichera|pulguicida|garrapaticida|pipeta|spray|locion|crema|sh2006|sh2007|sh1069|sh1061|shampoo para mascotas)\b', desc_lwr):
+        return "Farmacia y Veterinaria"
+    if re.search(r'\b(alfalfa|heno|viruta|virutas|virupack)\b', desc_lwr):
+        return "Heno y Virutas"
+    if re.search(r'\b(bb\s*iniciador|engorde|ponedora|pollito|gallina|la\s*palmera)\b', desc_lwr):
+        return "La Palmera (Forrajería)"
+        
+    words = [w for w in re.findall(r'[A-Za-z0-9]+', descripcion) if len(w) > 2 and w.lower() not in STOP_WORDS]
+    if words:
+        w0 = words[0].lower()
+        if w0 in BRAND_CANONICAL_MAP:
+            return BRAND_CANONICAL_MAP[w0]
+        if words[0].isalpha() and len(words[0]) >= 4:
+            return words[0].title()
+            
+    return "Artículos Generales"
+
 def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_number: int) -> Dict[str, Any]:
     codigo = str(row_dict.get('codigo', '') or '').strip()
     codigo_barras = str(row_dict.get('codigo_barras', '') or '').strip()
     sku = str(row_dict.get('sku', '') or '').strip()
     descripcion = str(row_dict.get('descripcion', '') or '').strip()
-    marca = str(row_dict.get('marca', '') or '').strip()
+    explicit_marca = str(row_dict.get('marca', '') or '').strip()
     presentacion = str(row_dict.get('presentacion', '') or '').strip()
     unidad = str(row_dict.get('unidad', '') or '').strip()
     
-    # Inferir marca en cualquier posición del texto
-    if not marca and descripcion:
-        for known_b in KNOWN_BRANDS:
-            if re.search(r'\b' + re.escape(known_b) + r'\b', descripcion, re.IGNORECASE):
-                marca = known_b
-                break
-        if not marca:
-            words = descripcion.strip().split()
-            if words:
-                first_w_lower = words[0].lower()
-                if first_w_lower in BRAND_CANONICAL_MAP:
-                    marca = BRAND_CANONICAL_MAP[first_w_lower]
-                elif len(words[0]) > 2 and words[0].isalpha() and words[0].lower() not in STOP_WORDS:
-                    marca = words[0].title()
-
-    clean_marca_key = remove_accents_and_clean(marca)
-    if clean_marca_key in BRAND_CANONICAL_MAP:
-        marca = BRAND_CANONICAL_MAP[clean_marca_key]
+    # Detección inteligente de Marca y Categoría
+    marca = detect_brand_and_category(descripcion, explicit_marca)
     
     precio = parse_price(row_dict.get('precio', ''))
     precio_final = parse_price(row_dict.get('precio_final', ''))

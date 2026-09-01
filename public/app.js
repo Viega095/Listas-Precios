@@ -1040,16 +1040,20 @@ class PriceComparatorApp {
     document.getElementById('modal-product-title').innerText = r.producto;
     document.getElementById('modal-product-meta').innerText = `Código: ${r.codigo || 'Sin código'} | Marca: ${r.marca || 'N/A'} | Presentación: ${r.presentacion || 'N/A'}`;
 
+    const diffDinero = (typeof r.diferencia_dinero === 'number' && !isNaN(r.diferencia_dinero)) ? r.diferencia_dinero : 0;
+    const diffPct = (typeof r.diferencia_porcentaje === 'number' && !isNaN(r.diferencia_porcentaje)) ? r.diferencia_porcentaje : 0;
+    const diffExpl = r.explicacion_porcentaje || (r.present_count === 1 ? 'Producto exclusivo de este proveedor.' : '');
+
     // Alerta de Discrepancia Elevada
     const alertBox = document.getElementById('modal-alert-discrepancy');
     const descText = document.getElementById('modal-alert-discrepancy-desc');
-    const isSevere = (r.precio_l1 && r.precio_l2 && Math.abs((r.precio_l2 - r.precio_l1) / r.precio_l1) >= 0.38) || (r.diferencia_porcentaje >= 40);
+    const isSevere = (r.precio_l1 && r.precio_l2 && Math.abs((r.precio_l2 - r.precio_l1) / r.precio_l1) >= 0.38) || (diffPct >= 40);
 
     if (isSevere && alertBox) {
       alertBox.classList.remove('hidden');
       if (descText) {
         descText.innerHTML = `
-          El precio varía un <b>${r.diferencia_porcentaje.toFixed(1)}%</b> entre proveedores (diferencia de <b>$${r.diferencia_dinero.toLocaleString('es-AR', {minimumFractionDigits: 2})}</b>). 
+          El precio varía un <b>${diffPct.toFixed(1)}%</b> entre proveedores (diferencia de <b>$${diffDinero.toLocaleString('es-AR', {minimumFractionDigits: 2})}</b>). 
           Verificá si un proveedor vende por unidad suelta y otro por caja/bulto, o si el peso difiere. Si son artículos distintos, hacé clic en <b>"Separar este producto"</b> abajo.
         `;
       }
@@ -1091,13 +1095,13 @@ class PriceComparatorApp {
     diffContainer.innerHTML = `
       <div class="flex items-center justify-between">
         <span class="font-semibold text-slate-700">Diferencia monetaria:</span>
-        <span class="font-black text-slate-900 text-sm">$${r.diferencia_dinero.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+        <span class="font-black text-slate-900 text-sm">$${diffDinero.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
       </div>
       <div class="flex items-center justify-between">
         <span class="font-semibold text-slate-700">Diferencia porcentual:</span>
-        <span class="font-black text-rose-700 text-sm">${r.diferencia_porcentaje.toFixed(2)}%</span>
+        <span class="font-black text-rose-700 text-sm">${diffPct.toFixed(2)}%</span>
       </div>
-      <p class="text-[11px] text-slate-500 pt-1 border-t border-slate-200 mt-1">${r.explicacion_porcentaje}</p>
+      <p class="text-[11px] text-slate-500 pt-1 border-t border-slate-200 mt-1">${diffExpl}</p>
     `;
 
     // Acciones de Desvinculación
