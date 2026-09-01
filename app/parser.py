@@ -243,106 +243,142 @@ def parse_file_to_dataframe(file_bytes: bytes, filename: str) -> Tuple[pd.DataFr
         raise RuntimeError(f"Error al leer el archivo {filename}: {str(e)}")
 
 def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
-    """Extrae texto estructurado y tablas de un PDF usando pypdf con análisis de patrones de producto y precio."""
+    """
+    Extrae texto estructurado y tablas de un PDF usando pypdf con reconstrucción de coordenadas (X, Y)
+    para alinear perfectamente tablas con múltiples columnas, pesos y precios.
+    """
     from pypdf import PdfReader
     
     reader = PdfReader(io.BytesIO(file_bytes))
     all_lines = []
     
+    # 1. Extraer líneas agrupadas por coordenadas visuales Y (mismo renglón horizontal)
     for page_idx, page in enumerate(reader.pages):
-        text = page.extract_text()
-        if not text:
-            continue
-        lines = text.splitlines()
-        for line in lines:
-            line_str = line.strip()
-            if line_str:
-                all_lines.append(line_str)
+        words_with_pos = []
+        
+        def visitor_body(text, cm, tm, font_dict, font_size):
+            if text and text.strip():
+                # tm[4] = coordenada X, tm[5] = coordenada Y
+                x = tm[4]
+                y = tm[5]
+                words_with_pos.append((y, x, text))
                 
+        try:
+            page.extract_text(visitor_text=visitor_body)
+        except Exception:
+            words_with_pos = []
+            
+        if words_with_pos:
+            # Ordenar de arriba hacia abajo (Y descendente) y de izquierda a derecha (X ascendente)
+            words_with_pos.sort(key=lambda item: (-item[0], item[1]))
+            current_line = []
+            current_y = None
+            
+            for y, x, text in words_with_pos:
+                if current_y is None or abs(y - current_y) <= 4:
+                    current_line.append((x, text))
+                    if current_y is None:
+                        current_y = y
+                else:
+                    current_line.sort(key=lambda it: it[0])
+                    line_str = ' '.join(it[1].strip() for it in current_line).strip()
+                    if line_str:
+                        all_lines.append(line_str)
+                    current_line = [(x, text)]
+                    current_y = y
+                    
+            if current_line:
+                current_line.sort(key=lambda it: it[0])
+                line_str = ' '.join(it[1].strip() for it in current_line).strip()
+                if line_str:
+                    all_lines.append(line_str)
+        else:
+            # Fallback a extracción tradicional de texto si no se pudo leer coordenadas
+            try:
+                txt = page.extract_text(extraction_mode="layout") or page.extract_text()
+            except Exception:
+                txt = page.extract_text()
+            if txt:
+                for l in txt.splitlines():
+                    ls = l.strip()
+                    if ls:
+                        all_lines.append(ls)
+
     if not all_lines:
         raise ValueError("El archivo PDF no contiene texto extraíble o es un documento escaneado sin OCR.")
-        
+
+    IGNORE_KEYWORDS = [
+        'pagina', 'página', 'page', 'código descripción', 'codigo descripcion', 
+        'lista de precio', 'tarifa', 'cuit', 'xxxxxx', 'total general', 'subtotal'
+    ]
+    
     parsed_rows = []
     
-    # Patrón de precio en cualquier posición (formato argentino y estándar)
-    PRICE_REGEX = re.compile(r'(\$?\s*\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})|\$?\s*\d+(?:[.,]\d{1,2})?)')
-    IGNORE_KEYWORDS = ['pagina', 'página', 'hoja', 'vigencia', 'lista de precio', 'telefono', 'teléfono', 'cuit', 'total general', 'subtotal']
-
     for l in all_lines:
         line_clean = l.strip()
         if not line_clean or len(line_clean) < 3:
             continue
             
         line_lower = line_clean.lower()
-        if any(line_lower.startswith(k) for k in IGNORE_KEYWORDS) and not re.search(r'\d{3,}', line_clean):
+        if any(line_lower.startswith(k) for k in IGNORE_KEYWORDS):
+            continue
+        if ('código' in line_lower or 'codigo' in line_lower) and ('descripción' in line_lower or 'descripcion' in line_lower):
+            continue
+        if re.match(r'^[xX\s\-_=.]+$', line_clean):
             continue
             
-        if re.search(r'^(?:lista\s+de\s+precios?|catalogo|precios\s+vigentes|tarifa\s+de\s+precios)\b', line_lower):
+        # Tokenizar la fila
+        tokens = [t.strip() for t in re.split(r'\s+', line_clean) if t.strip()]
+        if len(tokens) < 2:
             continue
-
-        # Separar por delimitadores comunes si existen
-        if '\t' in line_clean:
-            parts = [p.strip() for p in line_clean.split('\t') if p.strip()]
-        elif '|' in line_clean:
-            parts = [p.strip() for p in line_clean.split('|') if p.strip()]
-        elif ';' in line_clean:
-            parts = [p.strip() for p in line_clean.split(';') if p.strip()]
-        else:
-            parts = [p.strip() for p in re.split(r'\s{2,}', line_clean) if p.strip()]
             
-        if len(parts) >= 2:
-            # Encontrar precio entre las columnas
-            price_val = None
-            price_idx = -1
-            for idx in reversed(range(len(parts))):
-                pv = parse_price(parts[idx])
-                if pv > 0:
-                    price_val = pv
-                    price_idx = idx
-                    break
-                    
-            if price_val is not None:
-                non_price = [parts[j] for j in range(len(parts)) if j != price_idx]
-                code = ""
-                desc = ""
-                if len(non_price) >= 2 and (non_price[0].isdigit() or re.match(r'^[A-Za-z0-9_-]{2,15}$', non_price[0])):
-                    code = non_price[0]
-                    desc = " ".join(non_price[1:])
+        # El precio real en dinero es el último token válido de la fila
+        last_tok = tokens[-1].replace('$', '').strip()
+        price_val = parse_price(last_tok)
+        
+        # Validar que el precio esté en rango lógico para una unidad de producto (entre $50 y $50.000.000)
+        if price_val <= 0 or price_val > 50_000_000:
+            if len(tokens) >= 3:
+                alt_p = parse_price(tokens[-2].replace('$', '').strip())
+                if alt_p > 0 and alt_p < 50_000_000:
+                    price_val = alt_p
+                    tokens = tokens[:-1]
                 else:
-                    desc = " ".join(non_price)
-                    
-                if desc and len(desc) >= 2:
-                    parsed_rows.append({
-                        "Codigo": code,
-                        "Detalle_Producto": desc,
-                        "Precio": str(price_val)
-                    })
                     continue
-
-        # Si vino como una sola línea continua, extraer precio con regex
-        matches = list(PRICE_REGEX.finditer(line_clean))
-        if matches:
-            last_m = matches[-1]
-            pv = parse_price(last_m.group(1))
-            if pv > 0:
-                text_part = (line_clean[:last_m.start()] + " " + line_clean[last_m.end():]).strip()
-                code_m = re.match(r'^([A-Za-z0-9_-]{3,15})\s+(.+)$', text_part)
-                if code_m and not code_m.group(1).isalpha():
-                    code = code_m.group(1)
-                    desc = code_m.group(2).strip()
-                else:
-                    code = ""
-                    desc = text_part
-                    
-                if desc and len(desc) >= 2:
-                    parsed_rows.append({
-                        "Codigo": code,
-                        "Detalle_Producto": desc,
-                        "Precio": str(pv)
-                    })
+            else:
+                continue
+                
+        desc_tokens = tokens[:-1]
+        if not desc_tokens:
+            continue
+            
+        # Si el último token restante en la descripción es una columna auxiliar de peso/multiplicador (ej: '1', '1.5', '15', '0.085', '0.25')
+        if len(desc_tokens) >= 2:
+            last_dt = desc_tokens[-1].replace(',', '.')
+            try:
+                _ = float(last_dt)
+                # Es un número suelto de la columna peso -> removerlo de la descripción
+                desc_tokens = desc_tokens[:-1]
+            except ValueError:
+                pass
+                
+        # Chequear si el primer token es un código de artículo (ej: 3003, SHU008, 1528)
+        code = ""
+        if len(desc_tokens) >= 2:
+            first_t = desc_tokens[0]
+            if (first_t.isdigit() and len(first_t) <= 14) or (re.match(r'^[A-Za-z]{1,5}\d{2,8}$', first_t)):
+                code = first_t
+                desc_tokens = desc_tokens[1:]
+                
+        desc_str = " ".join(desc_tokens).strip()
+        if desc_str and len(desc_str) >= 2 and any(c.isalpha() for c in desc_str):
+            parsed_rows.append({
+                "Codigo": code,
+                "Detalle_Producto": desc_str,
+                "Precio": str(price_val)
+            })
 
     if parsed_rows:
         return pd.DataFrame(parsed_rows)
     else:
-        # Fallback estructurado
         return pd.DataFrame({'Detalle_Producto': all_lines, 'Precio': ['0.0'] * len(all_lines)})
