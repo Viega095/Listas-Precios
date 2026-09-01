@@ -556,7 +556,8 @@ class PriceComparatorApp {
 
     doubtfulRows.forEach(r => {
       const card = document.createElement('div');
-      card.className = "bg-white border-2 border-amber-200/90 hover:border-amber-400 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition shadow-xs";
+      card.id = `doubtful-card-${r.group_id}`;
+      card.className = "doubtful-item-card bg-white border-2 border-amber-200/90 hover:border-amber-400 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-200 shadow-xs";
       card.innerHTML = `
         <div class="space-y-2 text-xs flex-1">
           <div class="flex items-center gap-2">
@@ -583,10 +584,10 @@ class PriceComparatorApp {
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0 self-end md:self-center">
-          <button onclick="window.app.overrideMatch('${r.group_id}', 'confirm')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition">
+          <button type="button" onclick="window.app.overrideMatchOptimistic('${r.group_id}', 'confirm', this.closest('.doubtful-item-card'))" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition active:scale-95">
             <i data-lucide="check" class="w-4 h-4"></i> Confirmar
           </button>
-          <button onclick="window.app.overrideMatch('${r.group_id}', 'unlink')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 border border-slate-300 transition">
+          <button type="button" onclick="window.app.overrideMatchOptimistic('${r.group_id}', 'unlink', this.closest('.doubtful-item-card'))" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 border border-slate-300 transition active:scale-95">
             <i data-lucide="split" class="w-4 h-4"></i> Separar
           </button>
         </div>
@@ -596,7 +597,37 @@ class PriceComparatorApp {
     lucide.createIcons();
   }
 
-  async overrideMatch(groupId, action) {
+  async overrideMatchOptimistic(groupId, action, cardElement) {
+    // 1. Inmediato (0ms): Animación visual instantánea de desaparición
+    if (cardElement) {
+      cardElement.style.transition = 'all 0.18s ease-out';
+      cardElement.style.opacity = '0';
+      cardElement.style.transform = 'translateX(25px) scale(0.95)';
+      setTimeout(() => {
+        cardElement.remove();
+        const container = document.getElementById('doubtful-list-container');
+        const remaining = container ? container.children.length : 0;
+        const countText = document.getElementById('doubtful-count-text');
+        const badgeDudosos = document.getElementById('badge-dudosos');
+        if (countText) countText.innerText = remaining;
+        if (badgeDudosos) {
+          if (remaining > 0) {
+            badgeDudosos.innerText = remaining;
+            badgeDudosos.classList.remove('hidden');
+          } else {
+            badgeDudosos.classList.add('hidden');
+          }
+        }
+        if (remaining === 0) {
+          const banner = document.getElementById('doubtful-banner');
+          const drawer = document.getElementById('doubtful-drawer');
+          if (banner) banner.classList.add('hidden');
+          if (drawer) drawer.classList.add('hidden');
+        }
+      }, 180);
+    }
+
+    // 2. Procesar en segundo plano sin bloquear al usuario
     try {
       const res = await fetch('/api/match/override', {
         method: 'POST',
@@ -604,28 +635,20 @@ class PriceComparatorApp {
         body: JSON.stringify({ group_id: groupId, action: action })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail);
-
-      this.comparisonResult.rows = data.rows;
-      this.comparisonResult.totals = data.totals;
-      this.filteredRows = [...data.rows];
-
-      const badgeDudosos = document.getElementById('badge-dudosos');
-      const dCount = data.stats?.dudosos || 0;
-      if (dCount > 0) {
-        badgeDudosos.innerText = dCount;
-        badgeDudosos.classList.remove('hidden');
-      } else {
-        badgeDudosos.classList.add('hidden');
+      if (res.ok && data.rows) {
+        this.comparisonResult.rows = data.rows;
+        this.comparisonResult.totals = data.totals;
+        this.filteredRows = [...data.rows];
+        this.renderResultsDashboard();
+        this.applyFiltersAndRender();
       }
-
-      this.renderDoubtfulList();
-      this.renderResultsDashboard();
-      this.applyFiltersAndRender();
-      this.showAlert('success', action === 'confirm' ? 'Coincidencia confirmada.' : 'Productos separados correctamente.');
     } catch (err) {
-      this.showAlert('error', err.message);
+      console.error("Error al actualizar en segundo plano:", err);
     }
+  }
+
+  async overrideMatch(groupId, action) {
+    await this.overrideMatchOptimistic(groupId, action, document.getElementById(`doubtful-card-${groupId}`));
   }
 
   async overrideAll(action) {
@@ -920,7 +943,7 @@ class PriceComparatorApp {
         });
 
         itemsHtml += `
-          <div onclick="window.app.openProductModal(${it._filteredIndex})" class="px-3.5 sm:px-4 py-3.5 ${bgClass} hover:bg-sky-50 transition-colors border-b border-slate-300 last:border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-3 cursor-pointer">
+          <div onclick="window.app.openProductModal('${it.group_id}')" class="px-3.5 sm:px-4 py-3.5 ${bgClass} hover:bg-sky-50 transition-colors border-b border-slate-300 last:border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-3 cursor-pointer">
             <div class="space-y-2 flex-1 max-w-2xl">
               
               ${isSevereDiscrepancy ? `
@@ -950,7 +973,7 @@ class PriceComparatorApp {
                 ${it.presentacion ? `<span class="bg-white border border-slate-300 text-slate-700 px-2 py-0.5 rounded shadow-2xs font-semibold">Pres: ${it.presentacion}</span>` : ''}
                 ${it.es_dudoso ? `<span class="bg-amber-100 border border-amber-400 text-amber-950 font-bold px-2 py-0.5 rounded">⚠️ Similar</span>` : ''}
                 
-                <button type="button" onclick="event.stopPropagation(); window.app.openProductModal(${it._filteredIndex})" class="text-[11px] font-bold text-sky-800 hover:text-sky-950 bg-sky-50 hover:bg-sky-100 border border-sky-300 px-2.5 py-1 rounded-lg transition flex items-center gap-1 shadow-2xs">
+                <button type="button" onclick="event.stopPropagation(); window.app.openProductModal('${it.group_id}')" class="text-[11px] font-bold text-sky-800 hover:text-sky-950 bg-sky-50 hover:bg-sky-100 border border-sky-300 px-2.5 py-1 rounded-lg transition flex items-center gap-1 shadow-2xs">
                   <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver Detalles
                 </button>
 
@@ -994,9 +1017,21 @@ class PriceComparatorApp {
   // ========================================================
   // MODAL DETALLE DE PRODUCTO Y DESVINCULACIÓN
   // ========================================================
-  openProductModal(rowIndex) {
-    const r = this.filteredRows[rowIndex];
-    if (!r) return;
+  openProductModal(identifier) {
+    let r = null;
+    const allRows = this.comparisonResult?.rows || [];
+    if (typeof identifier === 'string') {
+      r = allRows.find(x => x.group_id === identifier);
+      if (!r && this.filteredRows) {
+        r = this.filteredRows.find(x => x.group_id === identifier);
+      }
+    } else if (typeof identifier === 'number') {
+      r = (this.filteredRows && this.filteredRows[identifier]) ? this.filteredRows[identifier] : allRows[identifier];
+    }
+    if (!r) {
+      console.warn("Producto no encontrado:", identifier);
+      return;
+    }
 
     document.getElementById('modal-status-badge').innerText = r.estado_precio;
     document.getElementById('modal-product-title').innerText = r.producto;
