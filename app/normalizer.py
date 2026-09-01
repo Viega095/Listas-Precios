@@ -44,7 +44,10 @@ SYNONYM_REPLACEMENTS = {
     'hipoallergenic': 'hipoalergenico', 'hypoallergenic': 'hipoalergenico', 'hipoalergenico': 'hipoalergenico',
     'gastro': 'gastrointestinal', 'urinary': 'urinario', 'urinaria': 'urinario',
     'comp': 'comprimido', 'comprimidos': 'comprimido', 'pipetas': 'pipeta',
-    'equilibium': 'equilibrium', 'dermaconfort': 'dermacomfort', 'derma care': 'dermacomfort'
+    'equilibium': 'equilibrium', 'dermaconfort': 'dermacomfort', 'derma care': 'dermacomfort',
+    'mayor': 'senior', 'mayores': 'senior', 'vida': '', 'plena': '',
+    'chicken': 'pollo', 'ch&r': 'pollo arroz', 'ch&a': 'pollo arroz', 'c&a': 'cordero arroz',
+    'a.performance': 'alta performance', 'perfromance': 'performance'
 }
 
 def remove_accents_and_clean(text: str) -> str:
@@ -426,9 +429,21 @@ def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_numb
     is_snack = bool(re.search(r'\b(snack|snacks|bocadito|bocaditos|dentastix|biscrok|hueso|huesos|huesito|huesitos|oreja|orejas|palito|palitos|glicines|biscuit)\b', desc_lwr))
     is_pipeta = bool(re.search(r'\b(pipeta|pipetas|spot\s*on)\b', desc_lwr))
     is_talquera = bool(re.search(r'\b(talquera|talco)\b', desc_lwr))
-    is_piedra = bool(re.search(r'\b(piedra|piedras|arena|pellet|sanitaria|sanitario|bentonita|absorvente)\b', desc_lwr))
+    is_piedra = bool(re.search(r'\b(piedra|piedras|arena|pellet|sanitaria|sanitario|bentonita|absorvente|paño\s*pet|pano\s*pet)\b', desc_lwr))
     is_shampoo = bool(re.search(r'\b(shampoo|enjuague|perfume)\b', desc_lwr))
     is_accesorio = bool(re.search(r'\b(comedero|bandeja|palita|peine|collar|pechera|correa|juguete|cepillo|bebedero|litera|bolso|cortauñas|cortaunas)\b', desc_lwr))
+    is_alimento = not (is_pouch or is_lata or is_snack or is_pipeta or is_talquera or is_piedra or is_shampoo or is_accesorio)
+
+    # Extraer rango de peso de antiparasitarios y pipetas
+    pipeta_range = None
+    if is_pipeta or re.search(r'\b(pipeta|pipetas|spot\s*on|comprimido|comprimidos|power|fiprobit|meltra)\b', desc_lwr):
+        m_range = re.search(r'\b(\d+[\.,]?\d*)\s*(?:a|al|-)\s*(\d+[\.,]?\d*)\b', desc_lwr)
+        if m_range:
+            pipeta_range = f"{m_range.group(1).replace(',', '.')}-{m_range.group(2).replace(',', '.')}"
+        else:
+            m_hasta = re.search(r'\bhasta\s*(\d+[\.,]?\d*)\b', desc_lwr)
+            if m_hasta:
+                pipeta_range = f"0-{m_hasta.group(1).replace(',', '.')}"
 
     # Generar tokens limpios
     cleaned_text = remove_accents_and_clean(cleaned_desc)
@@ -483,6 +498,8 @@ def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_numb
         "is_piedra": is_piedra,
         "is_shampoo": is_shampoo,
         "is_accesorio": is_accesorio,
+        "is_alimento": is_alimento,
+        "pipeta_range": pipeta_range,
         "clean_barcode": clean_barcode,
         "clean_code": clean_code,
         "clean_sku": clean_sku,

@@ -26,6 +26,14 @@ class ProductMatcher:
         if any(item.get(fk) != other_item.get(fk) for fk in format_keys):
             return False
             
+        # Alimento vs No Alimento (Accesorio / Cosmética / Piedras)
+        if item.get('is_alimento') != other_item.get('is_alimento'):
+            return False
+
+        # Rango de Pipetas / Antiparasitarios (2-5kg vs 10-20kg)
+        if item.get('pipeta_range') and other_item.get('pipeta_range') and item['pipeta_range'] != other_item['pipeta_range']:
+            return False
+
         # 2. Medidas y Unidades
         if item['measure_key'] and other_item['measure_key'] and item['measure_key'] != other_item['measure_key']:
             if item.get('unit_type') == 'g' and other_item.get('unit_type') == 'g':
