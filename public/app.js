@@ -605,7 +605,7 @@ class PriceComparatorApp {
 
       this.renderDoubtfulList();
       this.renderResultsDashboard();
-      this.renderTable();
+      this.applyFiltersAndRender();
       this.showAlert('success', action === 'confirm' ? 'Coincidencia confirmada.' : 'Productos separados correctamente.');
     } catch (err) {
       this.showAlert('error', err.message);
@@ -629,7 +629,7 @@ class PriceComparatorApp {
       document.getElementById('badge-dudosos').classList.add('hidden');
       this.renderDoubtfulList();
       this.renderResultsDashboard();
-      this.renderTable();
+      this.applyFiltersAndRender();
       this.showAlert('success', action === 'confirm_all' ? 'Se confirmaron todos los productos dudosos.' : 'Se separaron todos los productos dudosos.');
     } catch (err) {
       this.showAlert('error', err.message);

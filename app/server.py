@@ -150,89 +150,168 @@ async def remove_file(list_idx: int):
     return {"success": True}
 
 def generate_in_memory_demo_datasets() -> List[Dict[str, Any]]:
-    articulos_base = [
-        ("Gaseosa Cola", ["2.25L", "1.5L", "500ml", "354ml"], "Coca-Cola", 2800.0, "Bebidas"),
-        ("Gaseosa Lima Limón", ["2.25L", "1.5L", "500ml"], "Sprite", 2700.0, "Bebidas"),
-        ("Cerveza Rubia", ["1L", "473ml", "Pack x6"], "Quilmes", 2200.0, "Bebidas"),
-        ("Leche Entera", ["1L", "Tetra 1L", "Sachet 1L"], "La Serenísima", 1400.0, "Lácteos"),
-        ("Leche Descremada", ["1L", "Tetra 1L"], "Sancor", 1350.0, "Lácteos"),
-        ("Yogur Frutilla", ["1kg", "180g"], "La Serenísima", 2100.0, "Lácteos"),
-        ("Dulce de Leche Clásico", ["400g", "1kg"], "San Ignacio", 2500.0, "Lácteos"),
-        ("Aceite Girasol", ["900ml", "1.5L", "3L"], "Natura", 2400.0, "Almacén"),
-        ("Aceite Mezcla", ["900ml", "1.5L"], "Cocinero", 1900.0, "Almacén"),
-        ("Arroz Largo Fino", ["1kg", "500g"], "Gallo", 1800.0, "Almacén"),
-        ("Fideos Guiseros", ["500g", "1kg"], "Matarazzo", 1300.0, "Almacén"),
-        ("Fideos Tallarines", ["500g"], "Lucchetti", 1250.0, "Almacén"),
-        ("Puré de Tomate", ["520g"], "Marolio", 850.0, "Almacén"),
-        ("Mayonesa Clásica", ["475g", "950g"], "Hellmanns", 2600.0, "Almacén"),
-        ("Galletitas Dulces", ["120g", "300g"], "Arcor", 1100.0, "Galletitas"),
-        ("Galletitas de Agua", ["100g", "Pack x3 300g"], "Terrabusi", 950.0, "Galletitas"),
-        ("Shampoo Anticaspa", ["400ml", "200ml"], "Head & Shoulders", 4500.0, "Perfumería"),
-        ("Acondicionador Brillo", ["400ml", "200ml"], "Pantene", 4300.0, "Perfumería"),
-        ("Desodorante Aerosol", ["150ml", "Pack x2"], "Rexona", 2800.0, "Perfumería"),
-        ("Crema Dental Triple Acción", ["70g", "140g"], "Colgate", 1900.0, "Perfumería")
+    # Catálogo base realista y 100% único (sin duplicados)
+    articulos_unicos = [
+        # Royal Canin (Gatos y Perros)
+        ("Mother & Babycat", "1.5 kg", "Royal Canin", 26800.0, "Mascotas"),
+        ("Kitten", "1.5 kg", "Royal Canin", 25500.0, "Mascotas"),
+        ("Kitten", "7.5 kg", "Royal Canin", 72000.0, "Mascotas"),
+        ("Fit 32", "7.5 kg", "Royal Canin", 68500.0, "Mascotas"),
+        ("Indoor 27", "7.5 kg", "Royal Canin", 69800.0, "Mascotas"),
+        ("Sterilised 37", "7.5 kg", "Royal Canin", 71500.0, "Mascotas"),
+        ("Maxi Adult", "15 kg", "Royal Canin", 89000.0, "Mascotas"),
+        ("Medium Adult", "15 kg", "Royal Canin", 84500.0, "Mascotas"),
+        ("Mini Adult", "7.5 kg", "Royal Canin", 56000.0, "Mascotas"),
+        
+        # Purina Pro Plan
+        ("Puppy Razas Pequeñas", "3 kg", "Purina Pro Plan", 23500.0, "Mascotas"),
+        ("Puppy Razas Medianas", "15 kg", "Purina Pro Plan", 78000.0, "Mascotas"),
+        ("Puppy Razas Grandes", "15 kg", "Purina Pro Plan", 79500.0, "Mascotas"),
+        ("Adulto Razas Pequeñas", "3 kg", "Purina Pro Plan", 22800.0, "Mascotas"),
+        ("Adulto Razas Medianas", "15 kg", "Purina Pro Plan", 74000.0, "Mascotas"),
+        ("Adulto Razas Grandes", "15 kg", "Purina Pro Plan", 75500.0, "Mascotas"),
+        ("Sensitive Skin Salmón", "15 kg", "Purina Pro Plan", 82000.0, "Mascotas"),
+        ("Active Mind Adult 7+", "15 kg", "Purina Pro Plan", 79000.0, "Mascotas"),
+        
+        # Pedigree
+        ("Adulto Carne y Verduras", "21 kg", "Pedigree", 48500.0, "Mascotas"),
+        ("Adulto Pollo y Arroz", "21 kg", "Pedigree", 48500.0, "Mascotas"),
+        ("Cachorro Crecimiento Sano", "21 kg", "Pedigree", 52000.0, "Mascotas"),
+        ("Razas Pequeñas Nutrición Completa", "15 kg", "Pedigree", 42000.0, "Mascotas"),
+        ("Pouch Carne Trozos en Salsa", "100 g", "Pedigree", 850.0, "Mascotas"),
+        ("Pouch Pollo Trozos en Salsa", "100 g", "Pedigree", 850.0, "Mascotas"),
+        
+        # Whiskas
+        ("Gatitos Carne y Leche", "1 kg", "Whiskas", 4600.0, "Mascotas"),
+        ("Gatitos Carne y Leche", "3 kg", "Whiskas", 12800.0, "Mascotas"),
+        ("Adulto Carne", "3 kg", "Whiskas", 12200.0, "Mascotas"),
+        ("Adulto Pescado", "3 kg", "Whiskas", 12200.0, "Mascotas"),
+        ("Adulto Pollo", "3 kg", "Whiskas", 12200.0, "Mascotas"),
+        ("Pouch Salmón en Gelatina", "85 g", "Whiskas", 820.0, "Mascotas"),
+        ("Pouch Pavo en Salsa", "85 g", "Whiskas", 820.0, "Mascotas"),
+
+        # Eukanuba
+        ("Puppy Small Breed", "3 kg", "Eukanuba", 24000.0, "Mascotas"),
+        ("Puppy Medium Breed", "15 kg", "Eukanuba", 76000.0, "Mascotas"),
+        ("Adult Medium Breed", "15 kg", "Eukanuba", 73500.0, "Mascotas"),
+        ("Adult Large Breed", "15 kg", "Eukanuba", 74800.0, "Mascotas"),
+        
+        # La Serenísima
+        ("Leche Entera Clásica Sachet", "1 L", "La Serenísima", 1400.0, "Lácteos"),
+        ("Leche Descremada Sachet", "1 L", "La Serenísima", 1400.0, "Lácteos"),
+        ("Leche Entera Tetra Brik", "1 L", "La Serenísima", 1550.0, "Lácteos"),
+        ("Leche Descremada Tetra Brik", "1 L", "La Serenísima", 1550.0, "Lácteos"),
+        ("Yogur Bebible Frutilla", "1 kg", "La Serenísima", 2100.0, "Lácteos"),
+        ("Yogur Bebible Vainilla", "1 kg", "La Serenísima", 2100.0, "Lácteos"),
+        ("Yogur Firme Frutilla", "180 g", "La Serenísima", 950.0, "Lácteos"),
+        ("Yogur Firme Vainilla", "180 g", "La Serenísima", 950.0, "Lácteos"),
+        ("Dulce de Leche Colonial", "400 g", "La Serenísima", 2600.0, "Lácteos"),
+        ("Manteca Calidad Extra", "200 g", "La Serenísima", 2900.0, "Lácteos"),
+        ("Crema de Leche Clásica", "200 cc", "La Serenísima", 1950.0, "Lácteos"),
+
+        # Coca-Cola / Sprite
+        ("Gaseosa Cola Original", "2.25 L", "Coca-Cola", 2900.0, "Bebidas"),
+        ("Gaseosa Cola Original", "1.5 L", "Coca-Cola", 2200.0, "Bebidas"),
+        ("Gaseosa Cola Original", "500 ml", "Coca-Cola", 1200.0, "Bebidas"),
+        ("Gaseosa Cola Sin Azúcar", "2.25 L", "Coca-Cola", 2900.0, "Bebidas"),
+        ("Gaseosa Lima Limón", "2.25 L", "Sprite", 2800.0, "Bebidas"),
+        ("Gaseosa Lima Limón", "1.5 L", "Sprite", 2100.0, "Bebidas"),
+
+        # Matarazzo
+        ("Fideos Spaghetti", "500 g", "Matarazzo", 1350.0, "Almacén"),
+        ("Fideos Tallarines", "500 g", "Matarazzo", 1350.0, "Almacén"),
+        ("Fideos Mostacholes", "500 g", "Matarazzo", 1350.0, "Almacén"),
+        ("Fideos Tirabuzón", "500 g", "Matarazzo", 1350.0, "Almacén"),
+        ("Fideos Penne Rigate", "500 g", "Matarazzo", 1350.0, "Almacén"),
+
+        # Aceites y Aderezos
+        ("Aceite Girasol Puro", "1.5 L", "Natura", 2450.0, "Almacén"),
+        ("Aceite Girasol Puro", "900 ml", "Natura", 1600.0, "Almacén"),
+        ("Mayonesa Doypack", "475 g", "Natura", 1850.0, "Almacén"),
+        ("Aceite Mezcla", "1.5 L", "Cocinero", 1950.0, "Almacén"),
+        ("Aceite Girasol Plus", "900 ml", "Cocinero", 1550.0, "Almacén"),
+        ("Mayonesa Clásica Doypack", "475 g", "Hellmanns", 2500.0, "Almacén"),
+
+        # Cervezas
+        ("Cerveza Rubia Clásica", "1 L", "Quilmes", 2300.0, "Bebidas"),
+        ("Cerveza Rubia Lata", "473 ml", "Quilmes", 1350.0, "Bebidas"),
+        ("Cerveza Especial Lata", "473 ml", "Stella Artois", 1950.0, "Bebidas"),
+        ("Cerveza Lager Lata", "473 ml", "Heineken", 2100.0, "Bebidas"),
+
+        # Perfumería y Limpieza
+        ("Shampoo Limpieza Renovadora", "400 ml", "Head & Shoulders", 4600.0, "Perfumería"),
+        ("Shampoo Suave y Manejable", "400 ml", "Head & Shoulders", 4600.0, "Perfumería"),
+        ("Acondicionador Restauración", "400 ml", "Pantene", 4400.0, "Perfumería"),
+        ("Desodorante Aerosol Odorono", "150 ml", "Rexona", 2900.0, "Perfumería"),
+        ("Crema Dental Total 12", "90 g", "Colgate", 2100.0, "Perfumería"),
+        ("Crema Dental Triple Acción", "90 g", "Colgate", 1750.0, "Perfumería"),
+        ("Jabón Líquido para Ropa", "3 L", "Ariel", 9800.0, "Limpieza"),
+        ("Lavandina Clásica", "1 L", "Ayudín", 950.0, "Limpieza"),
+        ("Detergente Concentrado Limón", "500 ml", "Magistral", 2200.0, "Limpieza")
     ]
     
     pool = []
-    ean_base = 779100000000
-    for i in range(250):
-        art, pres_list, brand, base_price, cat = articulos_base[i % len(articulos_base)]
-        pres = pres_list[(i // len(articulos_base)) % len(pres_list)]
-        mult = 1.8 if "2.25" in pres or "Pack x6" in pres else (1.3 if "1.5" in pres or "Pack x3" in pres else (0.6 if "500" in pres or "200" in pres else 1.0))
-        price = round(base_price * mult, 2)
+    ean_base = 779123450000
+    for i, (art, pres, brand, base_price, cat) in enumerate(articulos_unicos):
         pool.append({
             "ean": str(ean_base + i + 1),
-            "sku": f"SKU-{10000 + i}",
+            "sku": f"SKU-{20000 + i}",
             "codigo": f"ART{i+1:04d}",
-            "nombre": f"{art} {brand} {pres}",
+            "nombre": f"{brand} {art} x {pres}",
             "marca": brand,
+            "presentacion": pres,
             "categoria": cat,
-            "precio": price
+            "precio": base_price
         })
 
     # Lista 1: Distribuidora Norte (Excel)
     l1_rows = []
-    for item in pool[:220]:
-        var = 1.0 + ((hash(item['ean']) % 15) - 7) / 100.0
+    for i, item in enumerate(pool):
+        # Variación de precio (-8% a +8%)
+        var = 1.0 + (((i * 7 + 3) % 17) - 8) / 100.0
         p = round(item['precio'] * var, 2)
         l1_rows.append({
             "Código EAN": item['ean'],
             "Descripción del Artículo": item['nombre'],
             "Marca": item['marca'],
+            "Presentación": item['presentacion'],
             "Precio Unitario": p,
             "Rubro": item['categoria']
         })
 
     # Lista 2: Mayorista Central (CSV)
     l2_rows = []
-    for item in pool[30:250]:
-        var = 1.0 + ((hash(item['sku']) % 20) - 10) / 100.0
+    for i, item in enumerate(pool):
+        # Variación diferente (-10% a +10%)
+        var = 1.0 + (((i * 11 + 5) % 21) - 10) / 100.0
         p = round(item['precio'] * var, 2)
         l2_rows.append({
             "SKU_PROD": item['sku'],
-            "PRODUCTO": f"{item['nombre'].upper()} - PROMO",
+            "PRODUCTO": f"{item['nombre'].upper()}",
             "PRECIO_NETO": p,
             "EAN13": item['ean'],
+            "MARCA": item['marca'],
             "FAMILIA": item['categoria']
         })
 
     # Lista 3: Supercenter Nacional (Excel)
     l3_rows = []
-    for item in pool[10:230]:
-        var = 1.0 + ((hash(item['codigo']) % 18) - 8) / 100.0
+    for i, item in enumerate(pool[:60]):
+        var = 1.0 + (((i * 13 + 7) % 19) - 9) / 100.0
         p = round(item['precio'] * var, 2)
         l3_rows.append({
             "Cod_Articulo": item['codigo'],
             "Detalle_Producto": item['nombre'],
+            "Marca_Prod": item['marca'],
             "Cod_Barra": item['ean'],
             "Importe_Final": p,
             "Sección": item['categoria']
         })
 
     demo_data = [
-        (0, "Proveedor_1_Distribuidora_Norte.xlsx", "Proveedor 1 (Norte)", l1_rows),
-        (1, "Proveedor_2_Mayorista_Central.csv", "Proveedor 2 (Central)", l2_rows),
-        (2, "Proveedor_3_Supercenter_Nacional.xlsx", "Proveedor 3 (Supercenter)", l3_rows)
+        (0, "Lista_1_Distribuidora_Norte.xlsx", "Proveedor 1 (Norte)", l1_rows),
+        (1, "Lista_2_Mayorista_Central.csv", "Proveedor 2 (Central)", l2_rows),
+        (2, "Lista_3_Supercenter_Nacional.xlsx", "Proveedor 3 (Supercenter)", l3_rows)
     ]
     
     results = []
