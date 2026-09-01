@@ -20,7 +20,64 @@ class ProductMatcher:
                 seen_lists.add(it['list_index'])
         return chosen
 
-    def match_all(self, similarity_threshold: float = 85.0, doubtful_threshold: float = 70.0) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    def _are_items_compatible(self, item: Dict[str, Any], other_item: Dict[str, Any]) -> bool:
+        # 1. Formatos (Pouch, Lata, Snack, Pipeta, etc.)
+        format_keys = ('is_pouch', 'is_lata', 'is_snack', 'is_pipeta', 'is_talquera', 'is_piedra', 'is_shampoo', 'is_accesorio')
+        if any(item.get(fk) != other_item.get(fk) for fk in format_keys):
+            return False
+            
+        # 2. Medidas y Unidades
+        if item['measure_key'] and other_item['measure_key'] and item['measure_key'] != other_item['measure_key']:
+            if item.get('unit_type') == 'g' and other_item.get('unit_type') == 'g':
+                v1, v2 = item.get('unit_value', 0), other_item.get('unit_value', 0)
+                if not (v1 >= 15000 and v2 >= 15000 and abs(v1 - v2) <= 1000):
+                    return False
+            else:
+                return False
+                
+        if item['unit_type'] and other_item['unit_type'] and item['unit_type'] != other_item['unit_type']:
+            return False
+
+        # 3. Marcas
+        if item['clean_brand'] and other_item['clean_brand'] and len(item['clean_brand']) > 2 and len(other_item['clean_brand']) > 2:
+            brand_match = (
+                item['clean_brand'] == other_item['clean_brand'] or
+                item['clean_brand'] in other_item['clean_brand'] or
+                other_item['clean_brand'] in item['clean_brand'] or
+                fuzz.token_set_ratio(item['clean_brand'], other_item['clean_brand']) >= 75
+            )
+            if not brand_match:
+                return False
+
+        # 4. Incompatibilidades Semánticas
+        t1 = set(item.get('tokens_sorted', '').split())
+        t2 = set(other_item.get('tokens_sorted', '').split())
+        
+        # Especie (Gato vs Perro)
+        if ('gato' in t1 and 'perro' in t2) or ('perro' in t1 and 'gato' in t2):
+            return False
+            
+        # Etapa de Vida (Cachorro vs Senior)
+        if ('cachorro' in t1 and 'senior' in t2) or ('senior' in t1 and 'cachorro' in t2):
+            return False
+            
+        # Sub-líneas incompatibles dentro de la misma marca
+        sublines = {'balanced', 'complete', 'premium', 'high pro', 'novel', 'equilibrium'}
+        lines1 = {w for w in sublines if w in t1}
+        lines2 = {w for w in sublines if w in t2}
+        if lines1 and lines2 and not (lines1 & lines2):
+            return False
+            
+        # Sabores principales opuestos
+        flavors = {'cordero', 'salmon', 'pescado', 'atun', 'cerdo'}
+        flv1 = {w for w in flavors if w in t1}
+        flv2 = {w for w in flavors if w in t2}
+        if flv1 and flv2 and not (flv1 & flv2):
+            return False
+            
+        return True
+
+    def match_all(self, similarity_threshold: float = 80.0, doubtful_threshold: float = 65.0) -> Tuple[List[Dict[str, Any]], Dict[str, int]]:
         """
         Ejecuta el matching completo de todos los productos de todas las listas.
         Garantiza que el 100% de los productos de entrada se preserven.
@@ -131,31 +188,14 @@ class ProductMatcher:
                 # Validar compatibilidad de medida, marca y formato con los miembros del grupo
                 compatible = True
                 scores = []
-                format_keys = ('is_pouch', 'is_lata', 'is_snack', 'is_pipeta', 'is_talquera', 'is_piedra', 'is_shampoo', 'is_accesorio')
                 for gi in grp_items:
-                    if any(item.get(fk) != gi.get(fk) for fk in format_keys):
+                    if not self._are_items_compatible(item, gi):
                         compatible = False
                         break
-                    if item['measure_key'] and gi['measure_key'] and item['measure_key'] != gi['measure_key']:
-                        compatible = False
-                        break
-                    if item['unit_type'] and gi['unit_type'] and item['unit_type'] != gi['unit_type']:
-                        compatible = False
-                        break
-                    if item['clean_brand'] and gi['clean_brand'] and len(item['clean_brand']) > 2 and len(gi['clean_brand']) > 2:
-                        brand_match = (
-                            item['clean_brand'] == gi['clean_brand'] or
-                            item['clean_brand'] in gi['clean_brand'] or
-                            gi['clean_brand'] in item['clean_brand'] or
-                            fuzz.token_set_ratio(item['clean_brand'], gi['clean_brand']) >= 75
-                        )
-                        if not brand_match:
-                            compatible = False
-                            break
                     
                     s1 = fuzz.token_sort_ratio(item['normalized_title'], gi['normalized_title'])
                     s2 = fuzz.token_set_ratio(item['normalized_title'], gi['normalized_title'])
-                    score_i = (s1 * 0.6) + (s2 * 0.4)
+                    score_i = (s1 * 0.3) + (s2 * 0.7)
                     scores.append(score_i)
                 
                 if compatible and scores:
@@ -190,28 +230,12 @@ class ProductMatcher:
                     if any(it['id'] == other_item['id'] or it['list_index'] == other_item['list_index'] for it in best_candidates):
                         continue
                         
-                    format_keys = ('is_pouch', 'is_lata', 'is_snack', 'is_pipeta', 'is_talquera', 'is_piedra', 'is_shampoo', 'is_accesorio')
-                    if any(item.get(fk) != other_item.get(fk) for fk in format_keys):
+                    if not self._are_items_compatible(item, other_item):
                         continue
-
-                    if item['measure_key'] and other_item['measure_key'] and item['measure_key'] != other_item['measure_key']:
-                        continue
-                    if item['unit_type'] and other_item['unit_type'] and item['unit_type'] != other_item['unit_type']:
-                        continue
-
-                    if item['clean_brand'] and other_item['clean_brand'] and len(item['clean_brand']) > 2 and len(other_item['clean_brand']) > 2:
-                        brand_match = (
-                            item['clean_brand'] == other_item['clean_brand'] or
-                            item['clean_brand'] in other_item['clean_brand'] or
-                            other_item['clean_brand'] in item['clean_brand'] or
-                            fuzz.token_set_ratio(item['clean_brand'], other_item['clean_brand']) >= 75
-                        )
-                        if not brand_match:
-                            continue
 
                     score1 = fuzz.token_sort_ratio(item['normalized_title'], other_item['normalized_title'])
                     score2 = fuzz.token_set_ratio(item['normalized_title'], other_item['normalized_title'])
-                    score = (score1 * 0.6) + (score2 * 0.4)
+                    score = (score1 * 0.3) + (score2 * 0.7)
                     
                     if score > best_score:
                         best_score = score

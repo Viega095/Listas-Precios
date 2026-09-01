@@ -28,13 +28,13 @@ SYNONYM_REPLACEMENTS = {
     'gatos': 'gato', 'gatitos': 'gatito', 'kitten': 'gatito', 'kittens': 'gatito',
     'perros': 'perro', 'dog': 'perro', 'dogs': 'perro', 'cat': 'gato', 'cats': 'gato',
     'cachorros': 'cachorro', 'puppy': 'cachorro', 'puppies': 'cachorro', 'pupy': 'cachorro',
+    'junior': 'cachorro', 'jr': 'cachorro',
     'adultos': 'adulto', 'adult': 'adulto', 'ad': 'adulto', 'seniors': 'senior',
-    'junior': 'junior', 'jr': 'junior',
     'medianos': 'mediano', 'medianas': 'mediano', 'medium': 'mediano', 'med': 'mediano',
     'pequenos': 'pequeno', 'pequenas': 'pequeno', 'small': 'pequeno', 'mini': 'pequeno', 'peq': 'pequeno',
-    'chicas': 'pequeno', 'chicos': 'pequeno', 'chico': 'pequeno',
-    'grandes': 'grande', 'maxi': 'grande', 'large': 'grande', 'gde': 'grande',
-    'razas': 'raza', 'breed': 'raza', 'proplan': 'pro plan',
+    'chicas': 'pequeno', 'chicos': 'pequeno', 'chico': 'pequeno', 'r.chica': 'pequeno', 'r/ch': 'pequeno', 'r/chicas': 'pequeno', 'r/pequena': 'pequeno', 'r/pequenas': 'pequeno', 'm/pequena': 'pequeno', 'm/chica': 'pequeno',
+    'grandes': 'grande', 'maxi': 'grande', 'large': 'grande', 'gde': 'grande', 'r/grande': 'grande', 'r/grandes': 'grande', 'm/g': 'grande', 'm y g': 'grande', 'm & l': 'grande',
+    'razas': '', 'raza': '', 'breed': '', 'proplan': 'pro plan',
     'litros': 'l', 'litro': 'l', 'lts': 'l', 'lt': 'l',
     'kilos': 'kg', 'kilo': 'kg', 'gr': 'g', 'gramos': 'g', 'gramo': 'g', 'grs': 'g',
     'descremada': 'descremado', 'entera': 'entero',
@@ -43,7 +43,8 @@ SYNONYM_REPLACEMENTS = {
     'pouch': 'pouch', 'pouches': 'pouch',
     'hipoallergenic': 'hipoalergenico', 'hypoallergenic': 'hipoalergenico', 'hipoalergenico': 'hipoalergenico',
     'gastro': 'gastrointestinal', 'urinary': 'urinario', 'urinaria': 'urinario',
-    'comp': 'comprimido', 'comprimidos': 'comprimido', 'pipetas': 'pipeta'
+    'comp': 'comprimido', 'comprimidos': 'comprimido', 'pipetas': 'pipeta',
+    'equilibium': 'equilibrium', 'dermaconfort': 'dermacomfort', 'derma care': 'dermacomfort'
 }
 
 def remove_accents_and_clean(text: str) -> str:
@@ -59,6 +60,8 @@ def remove_accents_and_clean(text: str) -> str:
     text = re.sub(r'\s+', ' ', text).strip()
     
     # Unificar variantes compuestas de marcas comerciales frecuentes
+    text = re.sub(r'\bvital\s*can\b', 'vitalcan', text)
+    text = re.sub(r'\bvital\s+(?=(balanced|complete|premium|cat|perro|crops|recipe))', 'vitalcan ', text)
     text = re.sub(r'\bnext\s*gard\b', 'nexgard', text)
     text = re.sub(r'\bnextgard\b', 'nexgard', text)
     text = re.sub(r'\b9\s*lives\b', '9lives', text)
@@ -72,6 +75,9 @@ def remove_accents_and_clean(text: str) -> str:
     text = re.sub(r'\bsaladillo\s*pets\b', 'saladillopets', text)
     text = re.sub(r'\bla\s*palmera\b', 'lapalmera', text)
     text = re.sub(r'\banimal\s*pet\b', 'animalpet', text)
+    text = re.sub(r'\bdog\s*selection\b', 'dogselection', text)
+    text = re.sub(r'\bdr\s*perrot\b', 'drperrot', text)
+    text = re.sub(r'\bpano\s*pet\b', 'panopet', text)
     return text
 
 def parse_price(value: Any) -> float:
@@ -119,15 +125,20 @@ def extract_standard_measure(text: str) -> Tuple[Optional[str], Optional[float],
     """
     Extrae la medida estandarizada (volumen en ml, peso en gramos, pack en unidades).
     Retorna (tipo_unidad, valor_normalizado, texto_sin_medida).
-    Ejemplos:
-    - "Coca Cola 2,25 l" -> ("ml", 2250.0, "Coca Cola")
-    - "Coca-Cola 2250 ml" -> ("ml", 2250.0, "Coca-Cola")
-    - "Azucar 1 kg" -> ("g", 1000.0, "Azucar")
-    - "Galletitas 250 gr" -> ("g", 250.0, "Galletitas")
     """
     clean_t = text
     
-    # 1. Chequear Volumen
+    # 1. Chequear Packs Promocionales con kilos de regalo (ej: 21+3kg, 20+2kg, 18+2kg, 15+3kg, 21+3)
+    match_promo = re.search(r'(?:\bx\s*)?(?P<base>\d+[\.,]?\d*)\s*\+\s*\d+[\.,]?\d*\s*(?:kg|kilos|k)?\b', clean_t, re.IGNORECASE)
+    if match_promo:
+        try:
+            val = float(match_promo.group('base').replace(',', '.'))
+            remainder = clean_t[:match_promo.start()] + " " + clean_t[match_promo.end():]
+            return "g", round(val * 1000, 2), re.sub(r'\s+', ' ', remainder).strip()
+        except ValueError:
+            pass
+
+    # 2. Chequear Volumen
     match_vol = RE_VOLUME.search(clean_t)
     if match_vol:
         val_str = match_vol.group('val').replace(',', '.')
@@ -146,8 +157,8 @@ def extract_standard_measure(text: str) -> Tuple[Optional[str], Optional[float],
         except ValueError:
             pass
 
-    # 2. Chequear Peso
-    match_w = RE_WEIGHT.search(clean_t)
+    # 3. Chequear Peso Explícito con unidad (incluyendo x15kg, x20kg, 7.5kg, 340gr)
+    match_w = re.search(r'(?:\bx\s*)?(?P<val>\d+[\.,]?\d*)\s*(?P<unit>kg|kilos|kilo|k|gr|g|gramos|grs|mg)\b', clean_t, re.IGNORECASE)
     if match_w:
         val_str = match_w.group('val').replace(',', '.')
         unit_str = match_w.group('unit').lower()
@@ -164,8 +175,22 @@ def extract_standard_measure(text: str) -> Tuple[Optional[str], Optional[float],
             return "g", norm_val, re.sub(r'\s+', ' ', remainder).strip()
         except ValueError:
             pass
+
+    # 4. Chequear Pesos Típicos de Pet Shop al final sin unidad explícita (ej: "X 15", "X 7.5", "X 20", "X 3", "X 400")
+    match_trail = re.search(r'(?:\bx\s*|\bpor\s*)?(?P<val>\d+[\.,]?\d*)\s*$', clean_t, re.IGNORECASE)
+    if match_trail:
+        val_str = match_trail.group('val').replace(',', '.')
+        try:
+            val = float(val_str)
+            remainder = clean_t[:match_trail.start()].strip()
+            if val in (0.4, 0.5, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 7.0, 7.5, 8.0, 10.0, 12.0, 15.0, 18.0, 20.0, 21.0, 22.0, 24.0, 25.0, 30.0, 40.0):
+                return "g", round(val * 1000, 2), remainder
+            elif val in (30, 40, 50, 70, 80, 85, 100, 120, 150, 200, 250, 340, 400, 500, 800):
+                return "g", round(val, 2), remainder
+        except ValueError:
+            pass
             
-    # 3. Chequear Pack / Unidades
+    # 5. Chequear Pack / Unidades (ej: 12u, 10x, 24x)
     match_pack = RE_PACK.search(clean_t)
     if match_pack:
         val_str = match_pack.group('val')
@@ -217,6 +242,10 @@ BRAND_CANONICAL_MAP = {
     'royl': 'Royal Canin',
     'vital can': 'Vital Can',
     'vitalcan': 'Vital Can',
+    'vital': 'Vital Can',
+    'power': 'Power',
+    'power gold': 'Power',
+    'fiprobit': 'Fiprobit',
     'maintenance': 'Maintenance Criadores',
     'maintenance criadores': 'Maintenance Criadores',
     'mantenance': 'Maintenance Criadores',
@@ -262,7 +291,7 @@ BRAND_CANONICAL_MAP = {
     'nine lives': '9 Lives',
     'gati': 'Gati',
     'fawna': 'Fawna',
-    'mon ami': 'Mon Ami',
+    'mon Ami': 'Mon Ami',
     'infinity': 'Infinity',
     'infity': 'Infinity',
     'hop!': 'Hop!',
@@ -292,6 +321,7 @@ BRAND_CANONICAL_MAP = {
     'bb iniciador': 'La Palmera (Forrajería)',
     'engorde': 'La Palmera (Forrajería)',
     'ponedora': 'La Palmera (Forrajería)',
+    'conejo': 'La Palmera (Forrajería)',
     'animal pet': 'Animal Pet',
     'virupack': 'Virupack',
     'viruta': 'Heno y Virutas',
@@ -302,6 +332,14 @@ BRAND_CANONICAL_MAP = {
     'iams': 'Iams',
     'rodeo': 'Rodeo',
     'total balance': 'Total Balance',
+    'dog selection': 'Dog Selection',
+    'dogselection': 'Dog Selection',
+    'dr perrot': 'Dr Perrot',
+    'drperrot': 'Dr Perrot',
+    'perrot': 'Dr Perrot',
+    'belcat': 'Belcat',
+    'estampa': 'Estampa',
+    'meltra': 'Meltra',
     'coca cola': 'Coca-Cola',
     'coca-cola': 'Coca-Cola',
     'la serenisima': 'La Serenísima',
@@ -324,7 +362,7 @@ def detect_brand_and_category(descripcion: str, explicit_marca: str = "") -> str
         
     desc_lwr = descripcion.lower()
     
-    # 1. Chequear marcas comerciales directas en el texto
+    # 1. Chequear marcas comerciales directas en el texto (prioridad alta)
     for brand_key, canonical_name in BRAND_CANONICAL_MAP.items():
         if re.search(r'\b' + re.escape(brand_key) + r'\b', desc_lwr):
             return canonical_name
@@ -384,7 +422,7 @@ def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_numb
     # Detectar formato comercial
     desc_lwr = descripcion.lower()
     is_pouch = bool(re.search(r'\b(pouch|pouches|sobre|sobres)\b', desc_lwr))
-    is_lata = bool(re.search(r'\b(lata|latas|can\b|mousse|pat[eé]|trocitos|souffle|filetes)\b', desc_lwr))
+    is_lata = bool(re.search(r'\b(lata|latas|mousse|pat[eé]|trocitos|souffle|filetes)\b', desc_lwr))
     is_snack = bool(re.search(r'\b(snack|snacks|bocadito|bocaditos|dentastix|biscrok|hueso|huesos|huesito|huesitos|oreja|orejas|palito|palitos|glicines|biscuit)\b', desc_lwr))
     is_pipeta = bool(re.search(r'\b(pipeta|pipetas|spot\s*on)\b', desc_lwr))
     is_talquera = bool(re.search(r'\b(talquera|talco)\b', desc_lwr))
