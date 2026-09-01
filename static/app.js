@@ -538,6 +538,7 @@ class PriceComparatorApp {
   renderDoubtfulList() {
     const container = document.getElementById('doubtful-list-container');
     const banner = document.getElementById('doubtful-banner');
+    const drawer = document.getElementById('doubtful-drawer');
     const countText = document.getElementById('doubtful-count-text');
     if (!container) return;
     container.innerHTML = '';
@@ -546,32 +547,47 @@ class PriceComparatorApp {
 
     if (doubtfulRows.length === 0) {
       if (banner) banner.classList.add('hidden');
+      if (drawer) drawer.classList.add('hidden');
       return;
     }
     if (banner) banner.classList.remove('hidden');
+    if (drawer) drawer.classList.remove('hidden');
     if (countText) countText.innerText = doubtfulRows.length;
 
     doubtfulRows.forEach(r => {
       const card = document.createElement('div');
-      card.className = "bg-amber-50/70 border border-amber-200 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4";
+      card.className = "bg-white border-2 border-amber-200/90 hover:border-amber-400 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition shadow-xs";
       card.innerHTML = `
-        <div class="space-y-1 text-xs">
+        <div class="space-y-2 text-xs flex-1">
           <div class="flex items-center gap-2">
-            <span class="font-bold text-slate-800 text-sm">${r.producto}</span>
-            <span class="bg-amber-100 text-amber-800 border border-amber-300/60 px-2 py-0.5 rounded text-[10px] font-semibold">Similitud: ${Math.round(r.similitud || r.confidence || 0)}%</span>
+            <span class="font-extrabold text-slate-900 text-sm">${r.producto}</span>
+            <span class="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-2 py-0.5 rounded text-[10px]">Similitud: ${Math.round(r.similitud || r.confidence || 0)}%</span>
           </div>
-          <div class="text-slate-600 grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
-            <div><b>${this.configs[0].nombre}:</b> ${r.desc_l1 || '<i>No presente</i>'} (${r.precio_l1 ? '$' + r.precio_l1.toLocaleString('es-AR') : '-'})</div>
-            <div><b>${this.configs[1].nombre}:</b> ${r.desc_l2 || '<i>No presente</i>'} (${r.precio_l2 ? '$' + r.precio_l2.toLocaleString('es-AR') : '-'})</div>
-            <div><b>${this.configs[2].nombre}:</b> ${r.desc_l3 || '<i>No presente</i>'} (${r.precio_l3 ? '$' + r.precio_l3.toLocaleString('es-AR') : '-'})</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
+              <span class="text-[10px] font-bold text-slate-500 uppercase block">${this.configs[0].nombre}</span>
+              <span class="font-semibold text-slate-800">${r.desc_l1 || '<i class="text-slate-400">No presente</i>'}</span>
+              <span class="block text-slate-500 font-medium text-[11px] mt-0.5">${r.precio_l1 ? '$' + r.precio_l1.toLocaleString('es-AR', {minimumFractionDigits: 2}) : '-'}</span>
+            </div>
+            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
+              <span class="text-[10px] font-bold text-slate-500 uppercase block">${this.configs[1].nombre}</span>
+              <span class="font-semibold text-slate-800">${r.desc_l2 || '<i class="text-slate-400">No presente</i>'}</span>
+              <span class="block text-slate-500 font-medium text-[11px] mt-0.5">${r.precio_l2 ? '$' + r.precio_l2.toLocaleString('es-AR', {minimumFractionDigits: 2}) : '-'}</span>
+            </div>
+            ${this.configs[2]?.nombre ? `
+            <div class="bg-slate-50 p-2 rounded-lg border border-slate-200">
+              <span class="text-[10px] font-bold text-slate-500 uppercase block">${this.configs[2].nombre}</span>
+              <span class="font-semibold text-slate-800">${r.desc_l3 || '<i class="text-slate-400">No presente</i>'}</span>
+              <span class="block text-slate-500 font-medium text-[11px] mt-0.5">${r.precio_l3 ? '$' + r.precio_l3.toLocaleString('es-AR', {minimumFractionDigits: 2}) : '-'}</span>
+            </div>` : ''}
           </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <button onclick="window.app.overrideMatch('${r.group_id}', 'confirm')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
-            <i data-lucide="check" class="w-3.5 h-3.5"></i> Confirmar
+        <div class="flex items-center gap-2 shrink-0 self-end md:self-center">
+          <button onclick="window.app.overrideMatch('${r.group_id}', 'confirm')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition">
+            <i data-lucide="check" class="w-4 h-4"></i> Confirmar
           </button>
-          <button onclick="window.app.overrideMatch('${r.group_id}', 'unlink')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1">
-            <i data-lucide="split" class="w-3.5 h-3.5"></i> Separar
+          <button onclick="window.app.overrideMatch('${r.group_id}', 'unlink')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 border border-slate-300 transition">
+            <i data-lucide="split" class="w-4 h-4"></i> Separar
           </button>
         </div>
       `;

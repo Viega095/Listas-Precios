@@ -230,28 +230,38 @@
     <!-- ========================================== -->
     <section id="section-step-5" class="step-section hidden space-y-6">
       
-      <!-- Banner de Dudosos (Si los hubiera) -->
-      <div id="doubtful-banner" class="hidden bg-amber-50 border border-amber-300/80 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-        <div class="flex items-center gap-2.5">
-          <i data-lucide="help-circle" class="w-5 h-5 text-amber-600 shrink-0"></i>
+      <!-- Banner de Verificación y Emparejamiento de Nombres (Paso Previo) -->
+      <div id="doubtful-banner" class="hidden bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-md">
+        <div class="flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shrink-0">
+            <i data-lucide="scan-search" class="w-6 h-6"></i>
+          </div>
           <div>
-            <h4 class="font-bold text-amber-900 text-sm">Se detectaron <span id="doubtful-count-text">0</span> productos con nombres parecidos</h4>
-            <p class="text-xs text-amber-800/80">Podés confirmar si son el mismo artículo o separarlos.</p>
+            <h4 class="font-bold text-amber-950 text-sm md:text-base">🔎 Revisión previa: Se detectaron <span id="doubtful-count-text" class="text-amber-700 font-extrabold text-base">0</span> productos con nombres similares</h4>
+            <p class="text-xs text-amber-900/80 mt-0.5">Podés revisar y comprobar si corresponden al mismo artículo antes de analizar los precios finales.</p>
           </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <button onclick="document.getElementById('doubtful-drawer').classList.toggle('hidden'); lucide.createIcons();" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-xs transition">
-            Revisar Dudas
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0 w-full md:w-auto justify-end">
+          <button onclick="document.getElementById('doubtful-drawer').classList.toggle('hidden'); lucide.createIcons();" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs transition flex items-center gap-1.5">
+            <i data-lucide="list-checks" class="w-4 h-4"></i> Revisar Nombres
           </button>
-          <button onclick="window.app.overrideAll('confirm_all')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow-xs transition">
-            Confirmar Todos
+          <button onclick="window.app.overrideAll('confirm_all')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5">
+            <i data-lucide="check-circle" class="w-4 h-4"></i> Confirmar Todos y Ver Precios
           </button>
         </div>
       </div>
 
-      <!-- Desplegable de Dudosos -->
-      <div id="doubtful-drawer" class="hidden space-y-3 bg-white p-4 rounded-xl border border-amber-200">
-        <div id="doubtful-list-container" class="space-y-3"></div>
+      <!-- Panel Desplegable de Comprobación de Nombres -->
+      <div id="doubtful-drawer" class="hidden space-y-4 bg-white p-5 rounded-2xl border-2 border-amber-200 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="text-xs text-slate-600 font-medium">
+            Comprobá cada producto de la lista izquierda con la derecha. Si son el mismo artículo hacé clic en <b>Confirmar</b>.
+          </div>
+          <button onclick="window.app.overrideAll('confirm_all')" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
+            ✓ Confirmar todas las coincidencias
+          </button>
+        </div>
+        <div id="doubtful-list-container" class="space-y-3 max-h-[500px] overflow-y-auto pr-1"></div>
       </div>
 
       <!-- Barra Superior: Buscador y Botones de Exportación -->
