@@ -868,17 +868,16 @@ class PriceComparatorApp {
       
       let itemsHtml = '';
       items.forEach((it, itemIdx) => {
-        const bgClass = (itemIdx % 2 === 0) ? 'bg-white' : 'bg-slate-100/90';
-
         let diffBadge = '';
         let isSevereDiscrepancy = false;
         let pctVal = 0;
+        let diff = 0;
         const uploadedCount = Object.keys(this.uploadedFiles).length;
         
         if (uploadedCount === 2 && it.precio_l1 !== null && it.precio_l2 !== null) {
-          const diff = it.precio_l2 - it.precio_l1;
+          diff = it.precio_l2 - it.precio_l1;
           pctVal = it.precio_l1 > 0 ? (diff / it.precio_l1) * 100 : 0;
-          if (Math.abs(pctVal) >= 40 || (Math.abs(diff) >= 20000 && Math.abs(pctVal) >= 30)) {
+          if (Math.abs(pctVal) >= 35 || (Math.abs(diff) >= 8000 && Math.abs(pctVal) >= 28)) {
             isSevereDiscrepancy = true;
           }
           if (diff > 0.01) {
@@ -895,6 +894,10 @@ class PriceComparatorApp {
         } else {
           diffBadge = `<span class="bg-emerald-100 text-emerald-900 font-bold px-3 py-1.5 rounded-lg text-xs border border-emerald-300 flex items-center justify-center gap-1">${it.proveedor_mas_barato}</span>`;
         }
+
+        const bgClass = isSevereDiscrepancy 
+          ? 'bg-rose-50/95 border-l-4 border-l-rose-600 ring-1 ring-rose-300/80 shadow-xs' 
+          : (itemIdx % 2 === 0 ? 'bg-white' : 'bg-slate-100/90');
 
         let provPricesHtml = '';
         [0, 1, 2].forEach(idx => {
@@ -917,11 +920,21 @@ class PriceComparatorApp {
         });
 
         itemsHtml += `
-          <div class="px-3.5 sm:px-4 py-3.5 ${bgClass} hover:bg-sky-50 transition-colors border-b border-slate-300 last:border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div onclick="window.app.openProductModal(${it._filteredIndex})" class="px-3.5 sm:px-4 py-3.5 ${bgClass} hover:bg-sky-50 transition-colors border-b border-slate-300 last:border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-3 cursor-pointer">
             <div class="space-y-2 flex-1 max-w-2xl">
+              
+              ${isSevereDiscrepancy ? `
+                <div class="bg-rose-600 text-white font-black text-xs px-3 py-1.5 rounded-lg flex flex-wrap items-center justify-between gap-2 shadow-xs mb-1.5">
+                  <span class="flex items-center gap-1.5">
+                    <i data-lucide="alert-octagon" class="w-4 h-4 text-amber-300 shrink-0"></i>
+                    🚨 ¡DIFERENCIA CRÍTICA DE PRECIO (${pctVal > 0 ? '+' : ''}${pctVal.toFixed(1)}% / $${Math.abs(diff).toLocaleString('es-AR', {minimumFractionDigits: 2})})!
+                  </span>
+                  <span class="text-[10px] bg-white text-rose-900 font-black px-2 py-0.5 rounded uppercase">Verificar o Separar</span>
+                </div>
+              ` : ''}
+
               <div class="flex flex-wrap items-center gap-2">
                 <span class="font-black text-slate-950 text-sm sm:text-base tracking-tight leading-snug">${it.producto}</span>
-                ${isSevereDiscrepancy ? `<span class="bg-amber-100 border border-amber-400 text-amber-950 font-extrabold px-2 py-0.5 rounded text-[10px] flex items-center gap-1 shadow-2xs" title="Variación muy alta. Verificá si corresponden a la misma presentación.">⚠️ Variación elevada (${pctVal > 0 ? '+' : ''}${pctVal.toFixed(0)}%)</span>` : ''}
               </div>
               
               <!-- Nombres exactos de cada lista comparada -->
@@ -936,9 +949,16 @@ class PriceComparatorApp {
                 ${it.codigo ? `<span class="bg-white border border-slate-300 text-slate-700 font-mono px-2 py-0.5 rounded shadow-2xs font-semibold">Cód: ${it.codigo}</span>` : ''}
                 ${it.presentacion ? `<span class="bg-white border border-slate-300 text-slate-700 px-2 py-0.5 rounded shadow-2xs font-semibold">Pres: ${it.presentacion}</span>` : ''}
                 ${it.es_dudoso ? `<span class="bg-amber-100 border border-amber-400 text-amber-950 font-bold px-2 py-0.5 rounded">⚠️ Similar</span>` : ''}
-                <button onclick="window.app.openProductModal(${it._filteredIndex})" class="text-[11px] font-bold text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-2 py-0.5 rounded transition flex items-center gap-1 ml-1">
-                  <i data-lucide="eye" class="w-3 h-3"></i> Ver Detalles / Separar
+                
+                <button type="button" onclick="event.stopPropagation(); window.app.openProductModal(${it._filteredIndex})" class="text-[11px] font-bold text-sky-800 hover:text-sky-950 bg-sky-50 hover:bg-sky-100 border border-sky-300 px-2.5 py-1 rounded-lg transition flex items-center gap-1 shadow-2xs">
+                  <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver Detalles
                 </button>
+
+                ${it.present_count > 1 ? `
+                  <button type="button" onclick="event.stopPropagation(); window.app.overrideMatch('${it.group_id}', 'unlink')" class="text-[11px] font-bold text-rose-800 hover:text-rose-950 bg-rose-50 hover:bg-rose-100 border border-rose-300 px-2.5 py-1 rounded-lg transition flex items-center gap-1 shadow-2xs">
+                    <i data-lucide="split" class="w-3.5 h-3.5"></i> Separar
+                  </button>
+                ` : ''}
               </div>
             </div>
             

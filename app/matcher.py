@@ -128,10 +128,14 @@ class ProductMatcher:
                 if not grp_items:
                     continue
                 
-                # Validar compatibilidad de medida y marca con los miembros del grupo
+                # Validar compatibilidad de medida, marca y formato con los miembros del grupo
                 compatible = True
                 scores = []
+                format_keys = ('is_pouch', 'is_lata', 'is_snack', 'is_pipeta', 'is_talquera', 'is_piedra', 'is_shampoo', 'is_accesorio')
                 for gi in grp_items:
+                    if any(item.get(fk) != gi.get(fk) for fk in format_keys):
+                        compatible = False
+                        break
                     if item['measure_key'] and gi['measure_key'] and item['measure_key'] != gi['measure_key']:
                         compatible = False
                         break
@@ -186,6 +190,10 @@ class ProductMatcher:
                     if any(it['id'] == other_item['id'] or it['list_index'] == other_item['list_index'] for it in best_candidates):
                         continue
                         
+                    format_keys = ('is_pouch', 'is_lata', 'is_snack', 'is_pipeta', 'is_talquera', 'is_piedra', 'is_shampoo', 'is_accesorio')
+                    if any(item.get(fk) != other_item.get(fk) for fk in format_keys):
+                        continue
+
                     if item['measure_key'] and other_item['measure_key'] and item['measure_key'] != other_item['measure_key']:
                         continue
                     if item['unit_type'] and other_item['unit_type'] and item['unit_type'] != other_item['unit_type']:

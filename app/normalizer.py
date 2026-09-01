@@ -196,6 +196,10 @@ BRAND_CANONICAL_MAP = {
     'purina cat chow': 'Purina Cat Chow',
     'royal': 'Royal Canin',
     'royal canin': 'Royal Canin',
+    'royal b.ch': 'Royal Canin',
+    'royal bch': 'Royal Canin',
+    'royal club': 'Royal Canin',
+    'royl': 'Royal Canin',
     'vital can': 'Vital Can',
     'vitalcan': 'Vital Can',
     'maintenance': 'Maintenance Criadores',
@@ -208,9 +212,14 @@ BRAND_CANONICAL_MAP = {
     'catpro': 'Catpro',
     'dogpro': 'Dogpro',
     'eukanuba': 'Eukanuba',
+    'eukanuba b.ch': 'Eukanuba',
+    'eukanuba bch': 'Eukanuba',
     'pedigree': 'Pedigree',
     'whiskas': 'Whiskas',
     'excellent': 'Excellent',
+    'excelent': 'Excellent',
+    'excellent b.ch': 'Excellent',
+    'excellent bch': 'Excellent',
     'simparica': 'Simparica',
     'nexgard': 'Nexgard',
     'nextgard': 'Nexgard',
@@ -241,9 +250,6 @@ BRAND_CANONICAL_MAP = {
 }
 
 def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_number: int) -> Dict[str, Any]:
-    """
-    Normaliza una fila completa de producto para permitir indexación y comparación precisa.
-    """
     codigo = str(row_dict.get('codigo', '') or '').strip()
     codigo_barras = str(row_dict.get('codigo_barras', '') or '').strip()
     sku = str(row_dict.get('sku', '') or '').strip()
@@ -254,47 +260,48 @@ def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_numb
     
     # Inferir marca en cualquier posición del texto
     if not marca and descripcion:
-        desc_clean = f" {remove_accents_and_clean(descripcion)} "
-        for kb in KNOWN_BRANDS:
-            kb_clean = f" {remove_accents_and_clean(kb)} "
-            if kb_clean in desc_clean:
-                marca = kb
+        for known_b in KNOWN_BRANDS:
+            if re.search(r'\b' + re.escape(known_b) + r'\b', descripcion, re.IGNORECASE):
+                marca = known_b
                 break
-                
         if not marca:
-            words = [w for w in descripcion.split() if len(w) > 2]
+            words = descripcion.strip().split()
             if words:
-                if len(words) >= 2 and words[0].lower() in ('royal', 'la', 'los', 'las', 'san', 'pro', 'dog', 'cat', 'coca', 'dr', 'head'):
-                    marca = f"{words[0]} {words[1]}".title()
-                else:
+                first_w_lower = words[0].lower()
+                if first_w_lower in BRAND_CANONICAL_MAP:
+                    marca = BRAND_CANONICAL_MAP[first_w_lower]
+                elif len(words[0]) > 2 and words[0].isalpha() and words[0].lower() not in STOP_WORDS:
                     marca = words[0].title()
 
     clean_marca_key = remove_accents_and_clean(marca)
     if clean_marca_key in BRAND_CANONICAL_MAP:
         marca = BRAND_CANONICAL_MAP[clean_marca_key]
     
-    # Precios y cantidades
-    precio_raw = row_dict.get('precio', '')
-    precio_final_raw = row_dict.get('precio_final', '')
-    iva_raw = row_dict.get('iva', '')
-    descuento_raw = row_dict.get('descuento', '')
-    cantidad_raw = row_dict.get('cantidad', '')
-    
-    precio = parse_price(precio_raw)
-    precio_final = parse_price(precio_final_raw)
-    iva = parse_price(iva_raw)
-    descuento = parse_price(descuento_raw)
-    cantidad = parse_quantity(cantidad_raw)
+    precio = parse_price(row_dict.get('precio', ''))
+    precio_final = parse_price(row_dict.get('precio_final', ''))
+    iva = parse_price(row_dict.get('iva', ''))
+    descuento = parse_price(row_dict.get('descuento', ''))
+    cantidad = parse_quantity(row_dict.get('cantidad', ''))
     
     # Extraer medida de descripcion y presentacion combinadas
     full_desc = f"{descripcion} {presentacion} {unidad}".strip()
     unit_type, unit_value, cleaned_desc = extract_standard_measure(full_desc)
     
-    # Generar tokens limpios y lematizados de la descripción
+    # Detectar formato comercial
+    desc_lwr = descripcion.lower()
+    is_pouch = bool(re.search(r'\b(pouch|pouches|sobre|sobres)\b', desc_lwr))
+    is_lata = bool(re.search(r'\b(lata|latas|can\b|mousse|pat[eé]|trocitos|souffle|filetes)\b', desc_lwr))
+    is_snack = bool(re.search(r'\b(snack|snacks|bocadito|bocaditos|dentastix|biscrok|hueso|huesos|huesito|huesitos|oreja|orejas|palito|palitos|glicines|biscuit)\b', desc_lwr))
+    is_pipeta = bool(re.search(r'\b(pipeta|pipetas|spot\s*on)\b', desc_lwr))
+    is_talquera = bool(re.search(r'\b(talquera|talco)\b', desc_lwr))
+    is_piedra = bool(re.search(r'\b(piedra|piedras|arena|pellet|sanitaria|sanitario|bentonita|absorvente)\b', desc_lwr))
+    is_shampoo = bool(re.search(r'\b(shampoo|enjuague|perfume)\b', desc_lwr))
+    is_accesorio = bool(re.search(r'\b(comedero|bandeja|palita|peine|collar|pechera|correa|juguete|cepillo|bebedero|litera|bolso|cortauñas|cortaunas)\b', desc_lwr))
+
+    # Generar tokens limpios
     cleaned_text = remove_accents_and_clean(cleaned_desc)
     raw_tokens = [t for t in cleaned_text.split() if t not in STOP_WORDS and len(t) > 1]
     canonical_tokens = [SYNONYM_REPLACEMENTS.get(t, t) for t in raw_tokens]
-    # Si algún reemplazo trajo 2 palabras (ej: 'proplan' -> 'pro plan')
     flat_tokens = []
     for ct in canonical_tokens:
         for sub_t in ct.split():
@@ -303,16 +310,12 @@ def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_numb
                 
     tokens = flat_tokens
     tokens_sorted = " ".join(sorted(set(tokens)))
-    
-    # Clave de medida estandarizada (ej: '2250ml', '1000g', '6u' o vacía)
     measure_key = f"{int(unit_value)}{unit_type}" if unit_type and unit_value else ""
     
-    # Normalizar códigos de barra numéricos (remover guiones y espacios)
     clean_barcode = re.sub(r'[^0-9A-Za-z]', '', codigo_barras)
     clean_code = re.sub(r'[^0-9A-Za-z]', '', codigo)
     clean_sku = re.sub(r'[^0-9A-Za-z]', '', sku)
     
-    # Si no vino código de barras explícito, pero el código o SKU es un EAN estándar (8 a 14 dígitos)
     if not clean_barcode:
         if clean_code.isdigit() and 8 <= len(clean_code) <= 14:
             clean_barcode = clean_code
@@ -322,7 +325,6 @@ def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_numb
     if not clean_code and clean_barcode:
         clean_code = clean_barcode
     
-    # Marca normalizada
     clean_brand = remove_accents_and_clean(marca)
 
     return {
@@ -341,8 +343,14 @@ def normalize_product_record(row_dict: Dict[str, Any], list_index: int, row_numb
         "iva_orig": iva,
         "descuento_orig": descuento,
         "cantidad_orig": cantidad,
-        
-        # Atributos normalizados para matching
+        "is_pouch": is_pouch,
+        "is_lata": is_lata,
+        "is_snack": is_snack,
+        "is_pipeta": is_pipeta,
+        "is_talquera": is_talquera,
+        "is_piedra": is_piedra,
+        "is_shampoo": is_shampoo,
+        "is_accesorio": is_accesorio,
         "clean_barcode": clean_barcode,
         "clean_code": clean_code,
         "clean_sku": clean_sku,
