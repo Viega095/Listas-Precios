@@ -1,4 +1,4 @@
-/* Estilos personalizados para el Comparador de Listas de Precios */
+/* Estilos personalizados y optimizaciones móviles */
 
 .step-btn.active {
   background-color: #f0f9ff;
@@ -15,6 +15,37 @@
 .file-card.has-file {
   border-color: #0284c7;
   background-color: #f8fafc;
+}
+
+/* Scroll táctil suave para smartphones y tablets */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.overflow-x-auto, .overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Optimización de botones y áreas de toque en celular (mínimo 40px) */
+@media (max-width: 640px) {
+  button, .drop-zone, select, input {
+    touch-action: manipulation;
+  }
+  
+  .drop-zone {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+  
+  /* Ajuste de fuentes y espaciado en pantallas pequeñas */
+  h1 {
+    font-size: 1rem !important;
+  }
+  
+  .step-section {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
 }
 
 /* ========================================================= */
@@ -37,8 +68,8 @@
   background-color: #f3f6f9;
 }
 
-/* Al pasar el mouse: Resaltado azul cielo vibrante y borde lateral */
-.row-comparison:hover {
+/* Al pasar el mouse / touch: Resaltado azul cielo vibrante */
+.row-comparison:hover, .row-comparison:active {
   background-color: #e0f2fe !important;
   box-shadow: inset 4px 0 0 0 #0284c7;
 }

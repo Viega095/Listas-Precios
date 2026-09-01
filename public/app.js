@@ -899,30 +899,30 @@ class PriceComparatorApp {
             const pName = this.configs[idx].nombre;
             const isBest = (it.proveedor_mas_barato_idx === idx);
             provPricesHtml += `
-              <div class="flex items-center gap-1.5 text-xs px-3 py-1 rounded-lg border ${
+              <div class="flex-1 sm:flex-initial flex items-center justify-between sm:justify-start gap-2 text-xs px-3 py-1.5 rounded-xl border ${
                 isBest && it.present_count > 1 
-                  ? 'bg-emerald-50 border-emerald-400 text-emerald-950 font-black ring-1 ring-emerald-500/40' 
-                  : 'bg-white border-slate-300 text-slate-800 font-semibold'
+                  ? 'bg-emerald-50 border-emerald-400 text-emerald-950 font-black ring-1 ring-emerald-500/40 shadow-2xs' 
+                  : 'bg-white border-slate-300 text-slate-800 font-semibold shadow-2xs'
               }">
                 <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">${pName}:</span>
-                <span class="font-extrabold text-slate-900">${pVal ? '$' + pVal.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '<i class="text-slate-400 font-normal">No presente</i>'}</span>
-                ${isBest && it.present_count > 1 ? '<span class="text-[9px] bg-emerald-700 text-white px-1.5 py-0.2 rounded font-black ml-0.5">LÍDER</span>' : ''}
+                <span class="font-black text-slate-900 text-xs sm:text-sm">${pVal ? '$' + pVal.toLocaleString('es-AR', { minimumFractionDigits: 2 }) : '<i class="text-slate-400 font-normal">No presente</i>'}</span>
+                ${isBest && it.present_count > 1 ? '<span class="text-[9px] bg-emerald-700 text-white px-1.5 py-0.5 rounded font-black shrink-0">LÍDER</span>' : ''}
               </div>
             `;
           }
         });
 
         itemsHtml += `
-          <div class="px-4 py-3.5 ${bgClass} hover:bg-sky-50 transition-colors border-b border-slate-300 last:border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div class="space-y-1.5 flex-1 max-w-2xl">
-              <div class="font-black text-slate-950 text-sm tracking-tight">${it.producto}</div>
+          <div class="px-3.5 sm:px-4 py-3.5 ${bgClass} hover:bg-sky-50 transition-colors border-b border-slate-300 last:border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="space-y-2 flex-1 max-w-2xl">
+              <div class="font-black text-slate-950 text-sm sm:text-base tracking-tight leading-snug">${it.producto}</div>
               
               <!-- Nombres exactos de cada lista comparada -->
-              <div class="flex flex-col sm:flex-row flex-wrap gap-1.5 text-[11px] bg-slate-50/90 p-1.5 rounded-lg border border-slate-200">
-                ${it.desc_l1 ? `<span class="inline-flex items-center gap-1"><span class="font-bold text-slate-700 text-[10px] uppercase bg-slate-200/80 px-1.5 py-0.5 rounded">${this.configs[0].nombre}:</span> <span class="text-slate-900 font-medium">${it.desc_l1}</span></span>` : ''}
+              <div class="flex flex-col sm:flex-row flex-wrap gap-1.5 text-[11px] bg-slate-50/90 p-2 rounded-xl border border-slate-200">
+                ${it.desc_l1 ? `<div class="inline-flex items-center gap-1.5 flex-wrap"><span class="font-bold text-sky-800 text-[10px] uppercase bg-sky-100 px-1.5 py-0.5 rounded">${this.configs[0].nombre}</span> <span class="text-slate-900 font-medium">${it.desc_l1}</span></div>` : ''}
                 ${it.desc_l1 && it.desc_l2 ? `<span class="text-slate-300 hidden sm:inline">|</span>` : ''}
-                ${it.desc_l2 ? `<span class="inline-flex items-center gap-1"><span class="font-bold text-slate-700 text-[10px] uppercase bg-slate-200/80 px-1.5 py-0.5 rounded">${this.configs[1].nombre}:</span> <span class="text-slate-900 font-medium">${it.desc_l2}</span></span>` : ''}
-                ${it.desc_l3 ? `<span class="inline-flex items-center gap-1"><span class="font-bold text-slate-700 text-[10px] uppercase bg-slate-200/80 px-1.5 py-0.5 rounded">${this.configs[2]?.nombre}:</span> <span class="text-slate-900 font-medium">${it.desc_l3}</span></span>` : ''}
+                ${it.desc_l2 ? `<div class="inline-flex items-center gap-1.5 flex-wrap"><span class="font-bold text-indigo-800 text-[10px] uppercase bg-indigo-100 px-1.5 py-0.5 rounded">${this.configs[1].nombre}</span> <span class="text-slate-900 font-medium">${it.desc_l2}</span></div>` : ''}
+                ${it.desc_l3 ? `<div class="inline-flex items-center gap-1.5 flex-wrap"><span class="font-bold text-teal-800 text-[10px] uppercase bg-teal-100 px-1.5 py-0.5 rounded">${this.configs[2]?.nombre}</span> <span class="text-slate-900 font-medium">${it.desc_l3}</span></div>` : ''}
               </div>
 
               <div class="flex flex-wrap items-center gap-2 text-[11px]">
@@ -931,21 +931,22 @@ class PriceComparatorApp {
                 ${it.es_dudoso ? `<span class="bg-amber-100 border border-amber-400 text-amber-950 font-bold px-2 py-0.5 rounded">⚠️ Similar</span>` : ''}
               </div>
             </div>
-            <div class="flex flex-wrap items-center gap-3 md:gap-5 shrink-0">
-              <div class="flex flex-wrap items-center gap-2">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4 shrink-0 w-full md:w-auto">
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                 ${provPricesHtml}
               </div>
-              <div class="min-w-[175px]">${diffBadge}</div>
+              <div class="w-full sm:w-auto min-w-[170px] flex justify-end">${diffBadge}</div>
             </div>
           </div>
         `;
       });
 
       card.innerHTML = `
-        <div class="bg-slate-200/90 px-4 py-3 border-b border-slate-300 flex items-center justify-between">
+        <div class="bg-slate-200/90 px-3.5 sm:px-4 py-2.5 sm:py-3 border-b border-slate-300 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="text-base">🏷️</span>
-            <h4 class="font-black text-slate-950 text-sm tracking-tight">${brand}</h4>
+            <h4 class="font-black text-slate-950 text-sm sm:text-base tracking-tight">${brand}</h4>
             <span class="bg-slate-300 text-slate-900 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-slate-400/80">${items.length} productos</span>
           </div>
         </div>

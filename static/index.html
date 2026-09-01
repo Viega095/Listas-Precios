@@ -30,56 +30,56 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
 
-  <!-- Encabezado Superior -->
+  <!-- Encabezado Superior Responsivo -->
   <header class="bg-slate-900 text-white sticky top-0 z-50 shadow-md border-b border-slate-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="bg-sky-500 text-white p-2 rounded-lg shadow-inner">
-          <i data-lucide="scale" class="w-6 h-6"></i>
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div class="bg-sky-500 text-white p-1.5 sm:p-2 rounded-lg shadow-inner">
+          <i data-lucide="scale" class="w-5 h-5 sm:w-6 sm:h-6"></i>
         </div>
         <div>
-          <h1 class="text-lg font-bold tracking-tight text-white">
-            Comparador de Listas de Precios
+          <h1 class="text-sm sm:text-lg font-bold tracking-tight text-white">
+            Comparador de Listas
           </h1>
         </div>
       </div>
 
-      <!-- Acciones de Cabecera -->
-      <div class="flex items-center gap-2.5">
-        <button id="btn-save-session" class="hidden text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
-          <i data-lucide="save" class="w-4 h-4"></i> Guardar Sesión
+      <!-- Acciones de Cabecera (Compactas en celular) -->
+      <div class="flex items-center gap-1.5 sm:gap-2.5">
+        <button id="btn-save-session" class="hidden text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 sm:gap-1.5 transition">
+          <i data-lucide="save" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i> <span class="hidden sm:inline">Guardar</span>
         </button>
-        <label for="input-load-session" class="cursor-pointer text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
-          <i data-lucide="folder-open" class="w-4 h-4"></i> Cargar Sesión
+        <label for="input-load-session" class="cursor-pointer text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 sm:gap-1.5 transition">
+          <i data-lucide="folder-open" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i> <span class="hidden sm:inline">Cargar</span>
           <input type="file" id="input-load-session" accept=".json" class="hidden">
         </label>
-        <button id="btn-reset" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
-          <i data-lucide="refresh-cw" class="w-4 h-4"></i> Nueva Comparación
+        <button id="btn-reset" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 sm:gap-1.5 transition">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i> <span>Nueva</span>
         </button>
       </div>
     </div>
   </header>
 
   <!-- Barra de Navegación Simplificada -->
-  <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-[61px] z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between py-2.5 gap-2 text-sm font-medium">
-        <div class="flex items-center gap-3">
-          <button id="nav-step-1" onclick="window.app.goToStep(1)" class="step-btn active flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sky-700 bg-sky-50 font-bold border border-sky-200 transition">
-            <span class="w-5 h-5 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center font-bold">1</span>
-            Cargar Listas
+  <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-[53px] sm:top-[61px] z-40">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between py-2 sm:py-2.5 gap-2 text-xs sm:text-sm font-medium">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button id="nav-step-1" onclick="window.app.goToStep(1)" class="step-btn active flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-sky-700 bg-sky-50 font-bold border border-sky-200 transition">
+            <span class="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-sky-600 text-white text-[10px] sm:text-xs flex items-center justify-center font-bold">1</span>
+            <span>Cargar</span>
           </button>
-          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-300"></i>
           
-          <button id="nav-step-5" onclick="window.app.goToStep(5)" class="step-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50 transition">
-            <span class="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-xs flex items-center justify-center font-bold">2</span>
-            Comparación de Precios
+          <button id="nav-step-5" onclick="window.app.goToStep(5)" class="step-btn flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50 transition">
+            <span class="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-slate-300 text-slate-700 text-[10px] sm:text-xs flex items-center justify-center font-bold">2</span>
+            <span>Comparar</span>
             <span id="badge-dudosos" class="hidden bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
           </button>
         </div>
 
-        <button id="btn-back-to-upload" onclick="window.app.goToStep(1)" class="hidden text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
-          <i data-lucide="arrow-left" class="w-4 h-4"></i> Cambiar Archivos
+        <button id="btn-back-to-upload" onclick="window.app.goToStep(1)" class="hidden text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 sm:gap-1.5 transition">
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i> <span class="hidden sm:inline">Cambiar Archivos</span>
         </button>
       </div>
     </div>
@@ -264,22 +264,22 @@
         <div id="doubtful-list-container" class="space-y-3 max-h-[500px] overflow-y-auto pr-1"></div>
       </div>
 
-      <!-- Barra Superior: Buscador y Botones de Exportación -->
-      <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <!-- Barra Superior: Buscador y Botones de Exportación Responsivos -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-sm">
         
         <!-- Buscador en tiempo real -->
-        <div class="relative flex-1 max-w-lg">
+        <div class="relative flex-1">
           <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-          <input type="text" id="table-search" placeholder="Buscar por producto (ej: Pro Plan, Kitten), marca o código..." class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-4 py-2 text-xs focus:border-sky-500 focus:bg-white focus:outline-none shadow-xs font-medium">
+          <input type="text" id="table-search" placeholder="Buscar por producto (ej: Pro Plan, Kitten), marca o código..." class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-4 py-2.5 text-xs focus:border-sky-500 focus:bg-white focus:outline-none shadow-xs font-medium">
         </div>
 
-        <div class="flex items-center gap-2.5">
+        <div class="grid grid-cols-2 sm:flex sm:items-center gap-2">
           <!-- Botones de Exportación General -->
-          <button onclick="window.app.exportFile('excel')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2 rounded-lg text-xs flex items-center gap-1.5 shadow-xs transition">
-            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar a Excel
+          <button onclick="window.app.exportFile('excel')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> <span>Excel</span>
           </button>
-          <button onclick="window.app.exportFile('pdf')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3.5 py-2 rounded-lg text-xs flex items-center gap-1.5 shadow-xs transition">
-            <i data-lucide="file-text" class="w-4 h-4"></i> Exportar PDF
+          <button onclick="window.app.exportFile('pdf')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-xs transition">
+            <i data-lucide="file-text" class="w-4 h-4"></i> <span>PDF</span>
           </button>
         </div>
       </div>
