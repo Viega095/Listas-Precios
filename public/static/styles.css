@@ -1,4 +1,4 @@
-/* Estilos personalizados para el Comparador de Listas de Precios */
+/* Estilos personalizados y optimizaciones móviles */
 
 .step-btn.active {
   background-color: #f0f9ff;
@@ -15,6 +15,64 @@
 .file-card.has-file {
   border-color: #0284c7;
   background-color: #f8fafc;
+}
+
+/* Scroll táctil suave para smartphones y tablets */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.overflow-x-auto, .overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Optimización de botones y áreas de toque en celular (mínimo 40px) */
+@media (max-width: 640px) {
+  button, .drop-zone, select, input {
+    touch-action: manipulation;
+  }
+  
+  .drop-zone {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+  
+  /* Category Pills */
+.category-pill {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  white-space: nowrap;
+  user-select: none;
+}
+.category-pill:hover {
+  background-color: #e2e8f0;
+  color: #1e293b;
+}
+.category-pill.active {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+  
+  /* Ajuste de fuentes y espaciado en pantallas pequeñas */
+  h1 {
+    font-size: 1rem !important;
+  }
+  
+  .step-section {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
 }
 
 /* ========================================================= */
@@ -37,8 +95,8 @@
   background-color: #f3f6f9;
 }
 
-/* Al pasar el mouse: Resaltado azul cielo vibrante y borde lateral */
-.row-comparison:hover {
+/* Al pasar el mouse / touch: Resaltado azul cielo vibrante */
+.row-comparison:hover, .row-comparison:active {
   background-color: #e0f2fe !important;
   box-shadow: inset 4px 0 0 0 #0284c7;
 }
