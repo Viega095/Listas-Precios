@@ -362,8 +362,9 @@ def parse_pdf_to_dataframe(file_bytes: bytes) -> pd.DataFrame:
                 if pv >= 50 and pv < 50_000_000:
                     non_price = toks[:-1]
                     code = ""
-                    if len(non_price) >= 2 and (non_price[0].isdigit() or re.match(r'^[A-Za-z]{1,5}\d{2,8}$', non_price[0])):
-                        code = non_price[0]
+                    first_tok = non_price[0]
+                    if len(non_price) >= 2 and ((first_tok.isdigit() and len(first_tok) <= 14) or (re.match(r'^[A-Za-z0-9\-_./]{2,14}$', first_tok) and any(c.isdigit() for c in first_tok))):
+                        code = first_tok
                         desc = " ".join(non_price[1:])
                     else:
                         desc = " ".join(non_price)
