@@ -690,31 +690,6 @@ class PriceComparatorApp {
       const totalComp = totals.total_productos_comparables || 1;
       const bestProvPct = ((maxCheapestCount / totalComp) * 100).toFixed(1);
 
-      let planCardsHtml = '';
-      [0, 1, 2].forEach(idx => {
-        if (this.uploadedFiles[idx]) {
-          const ped = totals.pedidos_optimos ? totals.pedidos_optimos[idx] : null;
-          const pName = this.configs[idx].nombre;
-          const pCount = ped ? ped.cantidad_productos : (totals.conteo_mas_baratos[idx] || 0) + (totals.conteo_exclusivos[idx] || 0);
-          const pMonto = ped ? ped.monto_total : 0;
-          
-          planCardsHtml += `
-            <div class="bg-white rounded-xl border border-amber-200/90 p-3 shadow-xs flex flex-col justify-between">
-              <div>
-                <div class="flex items-center justify-between mb-1">
-                  <span class="font-bold text-slate-800 text-xs truncate" title="${pName}">${pName}</span>
-                  <span class="bg-sky-100 text-sky-800 text-[10px] font-bold px-1.5 py-0.5 rounded">${pCount} items</span>
-                </div>
-                <div class="text-emerald-800 font-extrabold text-sm mb-2">$${pMonto.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
-              </div>
-              <button onclick="window.app.exportOrder(${idx})" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition shadow-xs">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i> Descargar Pedido
-              </button>
-            </div>
-          `;
-        }
-      });
-
       adviceBox.innerHTML = `
         <div class="space-y-3">
           <div class="flex items-start gap-2">
@@ -724,16 +699,6 @@ class PriceComparatorApp {
           <div class="flex items-start gap-2">
             <span class="font-bold text-emerald-900 text-sm">💰 Canasta Óptima Sugerida:</span>
             <span class="text-xs text-emerald-950">Comprándole a cada proveedor sus productos más baratos, ahorrás hasta <b>$${maxAhorro.toLocaleString('es-AR', {minimumFractionDigits: 2})}</b> (${maxAhorroPct.toFixed(2)}%).</span>
-          </div>
-          
-          <div class="pt-2 border-t border-amber-200/70">
-            <div class="text-xs font-bold text-slate-800 mb-2 flex items-center justify-between">
-              <span>🛍️ Reparto de la Canasta Óptima por Proveedor:</span>
-              <span class="text-[11px] font-normal text-slate-500">Total Canasta Óptima: <b>$${totals.total_compra_optima.toLocaleString('es-AR', {minimumFractionDigits: 2})}</b></span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              ${planCardsHtml}
-            </div>
           </div>
         </div>
       `;
@@ -772,17 +737,11 @@ class PriceComparatorApp {
           tbodyProv.innerHTML += `
             <tr class="hover:bg-slate-50">
               <td class="py-2.5 px-3 font-semibold text-slate-800">${this.configs[idx].nombre}</td>
-              <td class="py-2.5 px-3 text-right font-medium">$${totC.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
               <td class="py-2.5 px-3 text-right font-medium">$${totG.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
               <td class="py-2.5 px-3 text-right text-emerald-700 font-bold">$${(ah.ahorro_dinero || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
               <td class="py-2.5 px-3 text-right text-emerald-700 font-bold">${(ah.ahorro_porcentaje || 0).toFixed(2)}%</td>
               <td class="py-2.5 px-3 text-center">${cntB}</td>
               <td class="py-2.5 px-3 text-center">${cntE}</td>
-              <td class="py-2.5 px-3 text-center">
-                <button onclick="window.app.exportOrder(${idx})" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 font-bold px-2 py-1 rounded text-[11px] flex items-center gap-1 mx-auto transition shadow-xs" title="Descargar planilla de Excel con solo los productos que conviene comprar a este proveedor">
-                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Pedido .xlsx
-                </button>
-              </td>
             </tr>
           `;
         }
@@ -792,26 +751,16 @@ class PriceComparatorApp {
       tbodyProv.innerHTML += `
         <tr class="bg-emerald-50 text-emerald-950 font-bold">
           <td class="py-2.5 px-3 flex items-center gap-1.5"><i data-lucide="sparkles" class="w-4 h-4 text-emerald-600"></i> CANASTA ÓPTIMA</td>
-          <td class="py-2.5 px-3 text-right">$${totals.total_optimo_comparables.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
           <td class="py-2.5 px-3 text-right">$${totals.total_compra_optima.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
           <td class="py-2.5 px-3 text-right">-</td>
           <td class="py-2.5 px-3 text-right">-</td>
           <td class="py-2.5 px-3 text-center">Todos los ítems</td>
           <td class="py-2.5 px-3 text-center">-</td>
-          <td class="py-2.5 px-3 text-center text-slate-400 font-normal text-[10px]">Combinada</td>
         </tr>
       `;
     }
 
-    // Encabezados de proveedores en la tabla principal
-    const th0 = document.getElementById('th-prov-0');
-    const th1 = document.getElementById('th-prov-1');
-    const th2 = document.getElementById('th-prov-2');
-    if (th0) th0.innerText = `Precio ${this.configs[0].nombre}`;
-    if (th1) th1.innerText = `Precio ${this.configs[1].nombre}`;
-    if (th2) th2.innerText = `Precio ${this.configs[2].nombre}`;
-
-    this.switchView(this.currentViewMode || 'brands');
+    this.renderBrandsView();
     lucide.createIcons();
   }
 
@@ -888,11 +837,7 @@ class PriceComparatorApp {
     this.filteredRows = list;
     this.currentPage = 1;
 
-    if (this.currentViewMode === 'brands') {
-      this.renderBrandsView();
-    } else {
-      this.renderTablePage();
-    }
+    this.renderBrandsView();
   }
 
   renderBrandsView() {
